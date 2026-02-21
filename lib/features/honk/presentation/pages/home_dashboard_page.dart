@@ -7,8 +7,54 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../bloc/honk_feed_bloc.dart';
 import '../cubit/action_pad_cubit.dart';
 
-class HomeDashboardPage extends StatelessWidget {
-  const HomeDashboardPage({super.key});
+class HomeDashboardPage extends StatefulWidget {
+  const HomeDashboardPage({super.key, this.initialOpenedHonkId});
+
+  final String? initialOpenedHonkId;
+
+  @override
+  State<HomeDashboardPage> createState() => _HomeDashboardPageState();
+}
+
+class _HomeDashboardPageState extends State<HomeDashboardPage> {
+  bool _hasHandledInitialOpenedHonk = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _handleInitialOpenedHonk();
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeDashboardPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialOpenedHonkId != widget.initialOpenedHonkId) {
+      _hasHandledInitialOpenedHonk = false;
+      _handleInitialOpenedHonk();
+    }
+  }
+
+  void _handleInitialOpenedHonk() {
+    if (_hasHandledInitialOpenedHonk) {
+      return;
+    }
+
+    final honkId = widget.initialOpenedHonkId;
+    if (honkId == null || honkId.isEmpty) {
+      return;
+    }
+
+    _hasHandledInitialOpenedHonk = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Opened honk: $honkId')));
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

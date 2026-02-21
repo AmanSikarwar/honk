@@ -43,7 +43,10 @@ class NotificationRuntimeService implements INotificationRuntimeService {
         macOS: DarwinInitializationSettings(),
       );
 
-      await _localNotifications.initialize(settings: initializationSettings);
+      await _localNotifications.initialize(
+        settings: initializationSettings,
+        onDidReceiveNotificationResponse: _handleLocalNotificationResponse,
+      );
 
       await _localNotifications
           .resolvePlatformSpecificImplementation<
@@ -80,6 +83,9 @@ class NotificationRuntimeService implements INotificationRuntimeService {
       return;
     }
 
+    final honkId = message.data['honk_id'];
+    final payload = honkId is String && honkId.isNotEmpty ? honkId : null;
+
     try {
       final notificationDetails = NotificationDetails(
         android: AndroidNotificationDetails(
@@ -100,6 +106,7 @@ class NotificationRuntimeService implements INotificationRuntimeService {
         id: notification.hashCode,
         title: notification.title,
         body: notification.body,
+        payload: payload,
         notificationDetails: notificationDetails,
       );
     } catch (error, stackTrace) {
@@ -111,8 +118,22 @@ class NotificationRuntimeService implements INotificationRuntimeService {
   void _handleMessageOpenedApp(RemoteMessage message) {
     final honkId = message.data['honk_id'];
     if (honkId is String && honkId.isNotEmpty) {
-      _openedHonkIdsController.add(honkId);
+      _emitOpenedHonkId(honkId);
     }
+  }
+
+  void _handleLocalNotificationResponse(NotificationResponse response) {
+    final honkId = response.payload;
+    if (honkId != null && honkId.isNotEmpty) {
+      _emitOpenedHonkId(honkId);
+    }
+  }
+
+  void _emitOpenedHonkId(String honkId) {
+    if (_openedHonkIdsController.isClosed) {
+      return;
+    }
+    _openedHonkIdsController.add(honkId);
   }
 
   @override
@@ -121,6 +142,7 @@ class NotificationRuntimeService implements INotificationRuntimeService {
     await _onMessageOpenedAppSubscription?.cancel();
     _onMessageSubscription = null;
     _onMessageOpenedAppSubscription = null;
+    await _openedHonkIdsController.close();
     _initialized = false;
   }
 }

@@ -1,9 +1,6 @@
-create extension if not exists pg_net;
-
 -- Required once per environment:
 -- alter database postgres set app.settings.supabase_anon_key = '<SUPABASE_ANON_KEY>';
 -- alter database postgres set app.settings.honk_push_webhook_secret = '<RANDOM_WEBHOOK_SECRET>';
-
 create or replace function public.dispatch_honk_push_webhook()
 returns trigger
 language plpgsql
@@ -51,10 +48,3 @@ begin
   return NEW;
 end;
 $$;
-
-drop trigger if exists honk_push_webhook on public.honks;
-
-create trigger honk_push_webhook
-after insert on public.honks
-for each row
-execute function public.dispatch_honk_push_webhook();

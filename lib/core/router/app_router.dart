@@ -25,6 +25,7 @@ class HomeRoute extends GoRouteData with $HomeRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
+    final openedHonkId = state.uri.queryParameters['opened_honk_id'];
     return MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -33,7 +34,7 @@ class HomeRoute extends GoRouteData with $HomeRoute {
         ),
         BlocProvider(create: (_) => getIt<ActionPadCubit>()),
       ],
-      child: const HomeDashboardPage(),
+      child: HomeDashboardPage(initialOpenedHonkId: openedHonkId),
     );
   }
 }

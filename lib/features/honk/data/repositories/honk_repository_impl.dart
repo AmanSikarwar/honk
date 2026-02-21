@@ -41,70 +41,95 @@ class HonkRepositoryImpl implements IHonkRepository {
   }
 
   @override
-  Stream<Either<MainFailure, List<HonkEvent>>> watchFriendsHonks() async* {
+  Stream<Either<MainFailure, List<HonkEvent>>> watchFriendsHonks() {
     final user = _supabase.auth.currentUser;
     if (user == null) {
-      yield left(
-        const MainFailure.authenticationFailure(
-          'User must be authenticated to watch honks.',
+      return Stream.value(
+        left(
+          const MainFailure.authenticationFailure(
+            'User must be authenticated to watch honks.',
+          ),
         ),
       );
-      return;
     }
 
-    final friendIdsEither =
-        await TaskEither<MainFailure, List<String>>.tryCatch(() async {
-          final response = await _supabase
-              .from('friendships')
-              .select('friend_id')
-              .eq('user_id', user.id)
-              .eq('status', 'accepted');
+    final controller = StreamController<Either<MainFailure, List<HonkEvent>>>();
+    StreamSubscription<List<Map<String, dynamic>>>? friendshipsSubscription;
+    StreamSubscription<List<Map<String, dynamic>>>? honksSubscription;
+    Set<String> activeFriendIds = const <String>{};
 
-          final rows = List<Map<String, dynamic>>.from(response as List);
-          return rows
-              .map((row) => row['friend_id'] as String)
-              .toSet()
-              .toList(growable: false);
-        }, mapErrorToMainFailure).run();
+    void emitFailure(Object error, [StackTrace? stackTrace]) {
+      if (!controller.isClosed) {
+        controller.add(
+          left(mapErrorToMainFailure(error, stackTrace ?? StackTrace.current)),
+        );
+      }
+    }
 
-    yield* friendIdsEither.match(
-      (failure) async* {
-        yield left(failure);
-      },
-      (friendIds) async* {
-        if (friendIds.isEmpty) {
-          yield const Right(<HonkEvent>[]);
-          return;
+    Future<void> bindHonksForFriends(Set<String> friendIds) async {
+      if (_sameStringSets(activeFriendIds, friendIds)) {
+        return;
+      }
+
+      activeFriendIds = friendIds;
+      await honksSubscription?.cancel();
+      honksSubscription = null;
+
+      if (friendIds.isEmpty) {
+        if (!controller.isClosed) {
+          controller.add(const Right(<HonkEvent>[]));
         }
+        return;
+      }
 
-        yield* _supabase
-            .from('honks')
-            .stream(primaryKey: ['id'])
-            .inFilter('user_id', friendIds)
-            .order('created_at', ascending: false)
-            .map((rows) {
-              final honks = rows
-                  .map((row) => HonkEventModel.fromJson(row).toDomain())
-                  .where(
-                    (honk) => honk.expiresAt.isAfter(DateTime.now().toUtc()),
-                  )
-                  .toList(growable: false);
-              return right<MainFailure, List<HonkEvent>>(honks);
-            })
-            .transform(_streamErrorTransformer<List<HonkEvent>>());
-      },
-    );
+      honksSubscription = _supabase
+          .from('honks')
+          .stream(primaryKey: ['id'])
+          .inFilter('user_id', friendIds.toList(growable: false))
+          .order('created_at', ascending: false)
+          .listen((rows) {
+            final honks = rows
+                .map((row) => HonkEventModel.fromJson(row).toDomain())
+                .where((honk) => honk.expiresAt.isAfter(DateTime.now().toUtc()))
+                .toList(growable: false);
+            if (!controller.isClosed) {
+              controller.add(right<MainFailure, List<HonkEvent>>(honks));
+            }
+          }, onError: emitFailure);
+    }
+
+    friendshipsSubscription = _supabase
+        .from('friendships')
+        .stream(primaryKey: ['user_id', 'friend_id'])
+        .inFilter('user_id', [user.id])
+        .listen((rows) {
+          final friendIds = rows
+              .where((row) => row['status'] == 'accepted')
+              .map((row) => row['friend_id'])
+              .whereType<String>()
+              .toSet();
+          unawaited(bindHonksForFriends(friendIds));
+        }, onError: emitFailure);
+
+    controller.onCancel = () async {
+      await honksSubscription?.cancel();
+      await friendshipsSubscription?.cancel();
+    };
+
+    return controller.stream;
   }
 
-  StreamTransformer<Either<MainFailure, T>, Either<MainFailure, T>>
-  _streamErrorTransformer<T>() {
-    return StreamTransformer<
-      Either<MainFailure, T>,
-      Either<MainFailure, T>
-    >.fromHandlers(
-      handleError: (error, stackTrace, sink) {
-        sink.add(left(mapErrorToMainFailure(error, stackTrace)));
-      },
-    );
+  bool _sameStringSets(Set<String> leftSet, Set<String> rightSet) {
+    if (leftSet.length != rightSet.length) {
+      return false;
+    }
+
+    for (final value in leftSet) {
+      if (!rightSet.contains(value)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }

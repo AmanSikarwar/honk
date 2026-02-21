@@ -17,6 +17,7 @@ class FriendManagementCubit extends Cubit<FriendManagementState> {
   }
 
   final IFriendRepository _friendRepository;
+  int _searchRequestCounter = 0;
 
   Future<void> loadFriends() async {
     emit(state.copyWith(isLoading: true, failure: null));
@@ -32,6 +33,7 @@ class FriendManagementCubit extends Cubit<FriendManagementState> {
 
   Future<void> searchUsers(String query) async {
     final trimmed = query.trim();
+    final requestId = ++_searchRequestCounter;
     emit(state.copyWith(searchQuery: trimmed, failure: null));
 
     if (trimmed.isEmpty) {
@@ -40,6 +42,10 @@ class FriendManagementCubit extends Cubit<FriendManagementState> {
     }
 
     final result = await _friendRepository.searchUsers(query: trimmed).run();
+    if (isClosed || requestId != _searchRequestCounter) {
+      return;
+    }
+
     result.match(
       (failure) => emit(state.copyWith(failure: failure)),
       (results) => emit(state.copyWith(searchResults: results, failure: null)),

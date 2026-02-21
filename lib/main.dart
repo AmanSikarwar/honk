@@ -54,6 +54,7 @@ class _HonkAppState extends State<HonkApp> {
   StreamSubscription<AuthState>? _authStateSubscription;
   StreamSubscription<String>? _fcmTokenRefreshSubscription;
   StreamSubscription<String>? _notificationOpenSubscription;
+  String? _pendingOpenedHonkId;
 
   Future<void> _handleInitialDeepLink() async {
     final deepLink = await _deepLinkHandler.getInitialAuthDeepLink();
@@ -98,10 +99,19 @@ class _HonkAppState extends State<HonkApp> {
     }
 
     if (_authBloc.state is! Authenticated) {
+      _pendingOpenedHonkId = honkId;
       return;
     }
 
-    _router.go(const HomeRoute().location);
+    _navigateToOpenedHonk(honkId);
+  }
+
+  void _navigateToOpenedHonk(String honkId) {
+    final location = Uri(
+      path: const HomeRoute().location,
+      queryParameters: {'opened_honk_id': honkId},
+    ).toString();
+    _router.go(location);
   }
 
   @override
@@ -127,7 +137,17 @@ class _HonkAppState extends State<HonkApp> {
     );
 
     _authStateSubscription = _authBloc.stream.listen((state) {
-      state.whenOrNull(authenticated: (_) => _syncFcmTokenForCurrentUser());
+      state.whenOrNull(
+        authenticated: (_) {
+          _syncFcmTokenForCurrentUser();
+
+          final pendingHonkId = _pendingOpenedHonkId;
+          if (pendingHonkId != null && pendingHonkId.isNotEmpty) {
+            _pendingOpenedHonkId = null;
+            _navigateToOpenedHonk(pendingHonkId);
+          }
+        },
+      );
     });
     _fcmTokenRefreshSubscription = _notificationRepository
         .onTokenRefresh()

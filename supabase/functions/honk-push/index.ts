@@ -35,6 +35,7 @@ const supabaseUrl = getRequiredEnv('SUPABASE_URL')
 const serviceRoleKey = getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY')
 const firebaseProjectId = getRequiredEnv('FIREBASE_PROJECT_ID')
 const firebaseClientEmail = getRequiredEnv('FIREBASE_CLIENT_EMAIL')
+const webhookSecret = getRequiredEnv('HONK_PUSH_WEBHOOK_SECRET')
 const firebasePrivateKey = getRequiredEnv('FIREBASE_PRIVATE_KEY').replace(
   /\\n/g,
   '\n',
@@ -44,7 +45,21 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
 
 Deno.serve(async (req) => {
   try {
+    if (!isAuthorizedWebhookRequest(req)) {
+      return Response.json(
+        { error: 'Unauthorized webhook request.' },
+        { status: 401 },
+      )
+    }
+
     const payload = (await req.json()) as WebhookPayload
+
+    if (payload.schema !== 'public' || payload.table !== 'honks') {
+      return Response.json({
+        skipped: true,
+        reason: 'Unsupported table or schema.',
+      })
+    }
 
     if (payload.type !== 'INSERT' || payload.record == null) {
       return Response.json({ skipped: true, reason: 'Not an insert event.' })
@@ -159,6 +174,11 @@ function getRequiredEnv(key: string): string {
   }
 
   return value
+}
+
+function isAuthorizedWebhookRequest(req: Request): boolean {
+  const incomingSecret = req.headers.get('x-honk-webhook-secret')
+  return incomingSecret != null && incomingSecret === webhookSecret
 }
 
 type SendFcmMessageArgs = {

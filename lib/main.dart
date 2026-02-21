@@ -10,8 +10,9 @@ import 'package:honk/core/di/injection.dart';
 import 'package:honk/core/env/env.dart';
 import 'package:honk/core/router/app_router.dart';
 import 'package:honk/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:honk/features/notifications/domain/repositories/i_notification_repository.dart';
 import 'package:honk/firebase_options.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,7 +40,9 @@ class _HonkAppState extends State<HonkApp> {
   late final AuthBloc _authBloc;
   late final GoRouter _router;
   late final DeepLinkHandler _deepLinkHandler;
+  late final INotificationRepository _notificationRepository;
   StreamSubscription? _deepLinkSubscription;
+  StreamSubscription<AuthState>? _authStateSubscription;
 
   Future<void> _handleInitialDeepLink() async {
     final deepLink = await _deepLinkHandler.getInitialAuthDeepLink();
@@ -84,19 +87,35 @@ class _HonkAppState extends State<HonkApp> {
     _authBloc = getIt<AuthBloc>();
     _router = createAppRouter(_authBloc);
     _deepLinkHandler = getIt<DeepLinkHandler>();
+    _notificationRepository = getIt<INotificationRepository>();
 
     _authBloc.add(const AuthEvent.checkAuthStatus());
+    _syncFcmTokenForCurrentUser();
 
     _handleInitialDeepLink();
 
     _deepLinkSubscription = _deepLinkHandler.authDeepLinks.listen(
       _handleAuthDeepLink,
     );
+
+    _authStateSubscription = _authBloc.stream.listen((state) {
+      state.whenOrNull(authenticated: (_) => _syncFcmTokenForCurrentUser());
+    });
+  }
+
+  Future<void> _syncFcmTokenForCurrentUser() async {
+    final permissionResult = await _notificationRepository
+        .requestPermission()
+        .run();
+    await permissionResult.match((_) async {}, (_) async {
+      await _notificationRepository.syncFcmToken().run();
+    });
   }
 
   @override
   void dispose() {
     _deepLinkSubscription?.cancel();
+    _authStateSubscription?.cancel();
     _authBloc.close();
     super.dispose();
   }

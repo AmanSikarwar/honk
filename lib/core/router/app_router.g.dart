@@ -8,6 +8,8 @@ part of 'app_router.dart';
 
 List<RouteBase> get $appRoutes => [
   $homeRoute,
+  $friendManagementRoute,
+  $settingsRoute,
   $loginRoute,
   $signUpRoute,
   $forgotPasswordRoute,
@@ -23,6 +25,55 @@ mixin $HomeRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $friendManagementRoute => GoRouteData.$route(
+  path: '/friends',
+  factory: $FriendManagementRoute._fromState,
+);
+
+mixin $FriendManagementRoute on GoRouteData {
+  static FriendManagementRoute _fromState(GoRouterState state) =>
+      const FriendManagementRoute();
+
+  @override
+  String get location => GoRouteData.$location('/friends');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $settingsRoute =>
+    GoRouteData.$route(path: '/settings', factory: $SettingsRoute._fromState);
+
+mixin $SettingsRoute on GoRouteData {
+  static SettingsRoute _fromState(GoRouterState state) => const SettingsRoute();
+
+  @override
+  String get location => GoRouteData.$location('/settings');
 
   @override
   void go(BuildContext context) => context.go(location);

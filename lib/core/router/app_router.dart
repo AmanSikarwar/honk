@@ -8,6 +8,14 @@ import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/signup_page.dart';
 import '../../features/auth/presentation/pages/update_password_page.dart';
+import '../../features/friends/presentation/cubit/friend_management_cubit.dart';
+import '../../features/friends/presentation/pages/friend_management_page.dart';
+import '../../features/honk/presentation/bloc/honk_feed_bloc.dart';
+import '../../features/honk/presentation/cubit/action_pad_cubit.dart';
+import '../../features/honk/presentation/pages/home_dashboard_page.dart';
+import '../../features/notifications/presentation/cubit/notification_sync_cubit.dart';
+import '../../features/notifications/presentation/pages/settings_page.dart';
+import '../di/injection.dart';
 
 part 'app_router.g.dart';
 
@@ -17,7 +25,42 @@ class HomeRoute extends GoRouteData with $HomeRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    return const HomePage();
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) =>
+              getIt<HonkFeedBloc>()..add(const HonkFeedEvent.started()),
+        ),
+        BlocProvider(create: (_) => getIt<ActionPadCubit>()),
+      ],
+      child: const HomeDashboardPage(),
+    );
+  }
+}
+
+@TypedGoRoute<FriendManagementRoute>(path: '/friends')
+class FriendManagementRoute extends GoRouteData with $FriendManagementRoute {
+  const FriendManagementRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return BlocProvider(
+      create: (_) => getIt<FriendManagementCubit>(),
+      child: const FriendManagementPage(),
+    );
+  }
+}
+
+@TypedGoRoute<SettingsRoute>(path: '/settings')
+class SettingsRoute extends GoRouteData with $SettingsRoute {
+  const SettingsRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return BlocProvider(
+      create: (_) => getIt<NotificationSyncCubit>(),
+      child: const SettingsPage(),
+    );
   }
 }
 
@@ -70,60 +113,6 @@ class EmailVerificationRoute extends GoRouteData with $EmailVerificationRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) {
     return EmailVerificationPage(email: email);
-  }
-}
-
-/// Temporary home page placeholder.
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Honk'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              context.read<AuthBloc>().add(const AuthEvent.signOut());
-            },
-          ),
-        ],
-      ),
-      body: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          final user = state.whenOrNull(authenticated: (user) => user);
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.check_circle, size: 80, color: Colors.green),
-                const SizedBox(height: 24),
-                Text(
-                  'Welcome!',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                const SizedBox(height: 8),
-                if (user != null) ...[
-                  Text(
-                    user.email,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  if (user.displayName != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      user.displayName!,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
-                ],
-              ],
-            ),
-          );
-        },
-      ),
-    );
   }
 }
 

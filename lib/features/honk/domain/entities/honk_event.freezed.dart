@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$HonkEvent {
 
- String get id; String get userId; String get location; String get status; DateTime get createdAt; DateTime get expiresAt;
+ String get id; String get userId; String get location; String get status; String? get details; DateTime get createdAt; DateTime get expiresAt;
 /// Create a copy of HonkEvent
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $HonkEventCopyWith<HonkEvent> get copyWith => _$HonkEventCopyWithImpl<HonkEvent>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HonkEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.location, location) || other.location == location)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HonkEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.location, location) || other.location == location)&&(identical(other.status, status) || other.status == status)&&(identical(other.details, details) || other.details == details)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,location,status,createdAt,expiresAt);
+int get hashCode => Object.hash(runtimeType,id,userId,location,status,details,createdAt,expiresAt);
 
 @override
 String toString() {
-  return 'HonkEvent(id: $id, userId: $userId, location: $location, status: $status, createdAt: $createdAt, expiresAt: $expiresAt)';
+  return 'HonkEvent(id: $id, userId: $userId, location: $location, status: $status, details: $details, createdAt: $createdAt, expiresAt: $expiresAt)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $HonkEventCopyWith<$Res>  {
   factory $HonkEventCopyWith(HonkEvent value, $Res Function(HonkEvent) _then) = _$HonkEventCopyWithImpl;
 @useResult
 $Res call({
- String id, String userId, String location, String status, DateTime createdAt, DateTime expiresAt
+ String id, String userId, String location, String status, String? details, DateTime createdAt, DateTime expiresAt
 });
 
 
@@ -65,13 +65,14 @@ class _$HonkEventCopyWithImpl<$Res>
 
 /// Create a copy of HonkEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? location = null,Object? status = null,Object? createdAt = null,Object? expiresAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? location = null,Object? status = null,Object? details = freezed,Object? createdAt = null,Object? expiresAt = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,location: null == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as String,details: freezed == details ? _self.details : details // ignore: cast_nullable_to_non_nullable
+as String?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,expiresAt: null == expiresAt ? _self.expiresAt : expiresAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));
@@ -158,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String userId,  String location,  String status,  DateTime createdAt,  DateTime expiresAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String userId,  String location,  String status,  String? details,  DateTime createdAt,  DateTime expiresAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _HonkEvent() when $default != null:
-return $default(_that.id,_that.userId,_that.location,_that.status,_that.createdAt,_that.expiresAt);case _:
+return $default(_that.id,_that.userId,_that.location,_that.status,_that.details,_that.createdAt,_that.expiresAt);case _:
   return orElse();
 
 }
@@ -179,10 +180,10 @@ return $default(_that.id,_that.userId,_that.location,_that.status,_that.createdA
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String userId,  String location,  String status,  DateTime createdAt,  DateTime expiresAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String userId,  String location,  String status,  String? details,  DateTime createdAt,  DateTime expiresAt)  $default,) {final _that = this;
 switch (_that) {
 case _HonkEvent():
-return $default(_that.id,_that.userId,_that.location,_that.status,_that.createdAt,_that.expiresAt);case _:
+return $default(_that.id,_that.userId,_that.location,_that.status,_that.details,_that.createdAt,_that.expiresAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -199,10 +200,10 @@ return $default(_that.id,_that.userId,_that.location,_that.status,_that.createdA
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String userId,  String location,  String status,  DateTime createdAt,  DateTime expiresAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String userId,  String location,  String status,  String? details,  DateTime createdAt,  DateTime expiresAt)?  $default,) {final _that = this;
 switch (_that) {
 case _HonkEvent() when $default != null:
-return $default(_that.id,_that.userId,_that.location,_that.status,_that.createdAt,_that.expiresAt);case _:
+return $default(_that.id,_that.userId,_that.location,_that.status,_that.details,_that.createdAt,_that.expiresAt);case _:
   return null;
 
 }
@@ -214,13 +215,14 @@ return $default(_that.id,_that.userId,_that.location,_that.status,_that.createdA
 @JsonSerializable()
 
 class _HonkEvent implements HonkEvent {
-  const _HonkEvent({required this.id, required this.userId, required this.location, required this.status, required this.createdAt, required this.expiresAt});
+  const _HonkEvent({required this.id, required this.userId, required this.location, required this.status, this.details, required this.createdAt, required this.expiresAt});
   factory _HonkEvent.fromJson(Map<String, dynamic> json) => _$HonkEventFromJson(json);
 
 @override final  String id;
 @override final  String userId;
 @override final  String location;
 @override final  String status;
+@override final  String? details;
 @override final  DateTime createdAt;
 @override final  DateTime expiresAt;
 
@@ -237,16 +239,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HonkEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.location, location) || other.location == location)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HonkEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.location, location) || other.location == location)&&(identical(other.status, status) || other.status == status)&&(identical(other.details, details) || other.details == details)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,location,status,createdAt,expiresAt);
+int get hashCode => Object.hash(runtimeType,id,userId,location,status,details,createdAt,expiresAt);
 
 @override
 String toString() {
-  return 'HonkEvent(id: $id, userId: $userId, location: $location, status: $status, createdAt: $createdAt, expiresAt: $expiresAt)';
+  return 'HonkEvent(id: $id, userId: $userId, location: $location, status: $status, details: $details, createdAt: $createdAt, expiresAt: $expiresAt)';
 }
 
 
@@ -257,7 +259,7 @@ abstract mixin class _$HonkEventCopyWith<$Res> implements $HonkEventCopyWith<$Re
   factory _$HonkEventCopyWith(_HonkEvent value, $Res Function(_HonkEvent) _then) = __$HonkEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String userId, String location, String status, DateTime createdAt, DateTime expiresAt
+ String id, String userId, String location, String status, String? details, DateTime createdAt, DateTime expiresAt
 });
 
 
@@ -274,13 +276,14 @@ class __$HonkEventCopyWithImpl<$Res>
 
 /// Create a copy of HonkEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? location = null,Object? status = null,Object? createdAt = null,Object? expiresAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? location = null,Object? status = null,Object? details = freezed,Object? createdAt = null,Object? expiresAt = null,}) {
   return _then(_HonkEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,location: null == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as String,details: freezed == details ? _self.details : details // ignore: cast_nullable_to_non_nullable
+as String?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,expiresAt: null == expiresAt ? _self.expiresAt : expiresAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));

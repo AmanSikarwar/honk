@@ -17,6 +17,7 @@ abstract class HonkEventModel with _$HonkEventModel {
     required String userId,
     required String location,
     required String status,
+    String? details,
     required DateTime createdAt,
     required DateTime expiresAt,
   }) = _HonkEventModel;
@@ -27,6 +28,7 @@ abstract class HonkEventModel with _$HonkEventModel {
       userId: honk.userId,
       location: honk.location,
       status: honk.status,
+      details: honk.details,
       createdAt: honk.createdAt,
       expiresAt: honk.expiresAt,
     );
@@ -38,6 +40,7 @@ abstract class HonkEventModel with _$HonkEventModel {
       userId: userId,
       location: location,
       status: status,
+      details: details,
       createdAt: createdAt,
       expiresAt: expiresAt,
     );

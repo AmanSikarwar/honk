@@ -16,10 +16,12 @@ class HonkRepositoryImpl implements IHonkRepository {
   HonkRepositoryImpl(this._supabase);
 
   final SupabaseClient _supabase;
+  static const _honkSelectColumns =
+      'id, user_id, location, status, details, created_at, expires_at';
 
   @override
-  TaskEither<MainFailure, Unit> broadcastHonk(HonkEvent honk) {
-    return TaskEither<MainFailure, Unit>.tryCatch(() async {
+  TaskEither<MainFailure, HonkEvent> broadcastHonk(HonkEvent honk) {
+    return TaskEither<MainFailure, HonkEvent>.tryCatch(() async {
       final user = _supabase.auth.currentUser;
       if (user == null) {
         throw const MainFailure.authenticationFailure(
@@ -27,17 +29,33 @@ class HonkRepositoryImpl implements IHonkRepository {
         );
       }
 
-      final model = HonkEventModel.fromDomain(honk).copyWith(userId: user.id);
+      final details = _normalizedOptionalText(honk.details);
+      final location = _normalizedOptionalText(honk.location);
+      if (location == null) {
+        throw const MainFailure.databaseFailure('Location is required.');
+      }
 
-      await _supabase.from('honks').insert({
-        'user_id': model.userId,
-        'location': model.location,
-        'status': model.status,
-        'created_at': model.createdAt.toUtc().toIso8601String(),
-        'expires_at': model.expiresAt.toUtc().toIso8601String(),
-      });
+      final status = _normalizedOptionalText(honk.status);
+      if (status == null) {
+        throw const MainFailure.databaseFailure('Status is required.');
+      }
 
-      return unit;
+      final response = await _supabase
+          .from('honks')
+          .insert({
+            'user_id': user.id,
+            'location': location,
+            'status': status,
+            'details': details,
+            'created_at': honk.createdAt.toUtc().toIso8601String(),
+            'expires_at': honk.expiresAt.toUtc().toIso8601String(),
+          })
+          .select(_honkSelectColumns)
+          .single();
+
+      return HonkEventModel.fromJson(
+        Map<String, dynamic>.from(response),
+      ).toDomain();
     }, mapErrorToMainFailure);
   }
 
@@ -53,7 +71,7 @@ class HonkRepositoryImpl implements IHonkRepository {
 
       final honkResponse = await _supabase
           .from('honks')
-          .select('id, user_id, location, status, created_at, expires_at')
+          .select(_honkSelectColumns)
           .eq('id', trimmedHonkId)
           .maybeSingle();
 
@@ -76,7 +94,33 @@ class HonkRepositoryImpl implements IHonkRepository {
         senderUsername: profileResponse == null
             ? null
             : profileResponse['username'] as String?,
+        isOwnedByCurrentUser: _supabase.auth.currentUser?.id == honk.userId,
       );
+    }, mapErrorToMainFailure);
+  }
+
+  @override
+  TaskEither<MainFailure, Unit> deleteHonk({required String honkId}) {
+    return TaskEither<MainFailure, Unit>.tryCatch(() async {
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        throw const MainFailure.authenticationFailure(
+          'User must be authenticated to delete a honk.',
+        );
+      }
+
+      final trimmedHonkId = honkId.trim();
+      if (trimmedHonkId.isEmpty) {
+        throw const MainFailure.databaseFailure('Honk ID is required.');
+      }
+
+      await _supabase
+          .from('honks')
+          .delete()
+          .eq('id', trimmedHonkId)
+          .eq('user_id', user.id);
+
+      return unit;
     }, mapErrorToMainFailure);
   }
 
@@ -178,5 +222,13 @@ class HonkRepositoryImpl implements IHonkRepository {
     }
 
     return true;
+  }
+
+  String? _normalizedOptionalText(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return null;
+    }
+    return trimmed;
   }
 }

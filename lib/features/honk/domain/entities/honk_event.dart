@@ -10,6 +10,7 @@ abstract class HonkEvent with _$HonkEvent {
     required String userId,
     required String location,
     required String status,
+    String? details,
     required DateTime createdAt,
     required DateTime expiresAt,
   }) = _HonkEvent;

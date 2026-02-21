@@ -21,6 +21,7 @@ class HonkDetailsPage extends StatefulWidget {
 
 class _HonkDetailsPageState extends State<HonkDetailsPage> {
   late Future<Either<MainFailure, HonkDetails?>> _detailsFuture;
+  bool _isDeleting = false;
 
   @override
   void initState() {
@@ -36,6 +37,61 @@ class _HonkDetailsPageState extends State<HonkDetailsPage> {
           .fetchHonkDetails(honkId: widget.honkId)
           .run();
     });
+  }
+
+  Future<void> _deleteHonk(String honkId) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete honk?'),
+          content: const Text(
+            'This removes the honk for everyone and cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete != true || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _isDeleting = true;
+    });
+
+    final result = await widget.honkRepository.deleteHonk(honkId: honkId).run();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isDeleting = false;
+    });
+
+    result.match(
+      (failure) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failure.toString())));
+      },
+      (_) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Honk deleted.')));
+        Navigator.of(context).maybePop();
+      },
+    );
   }
 
   @override
@@ -68,7 +124,13 @@ class _HonkDetailsPageState extends State<HonkDetailsPage> {
                 );
               }
 
-              return _HonkDetailsView(details: details);
+              return _HonkDetailsView(
+                details: details,
+                isDeleting: _isDeleting,
+                onDelete: details.isOwnedByCurrentUser
+                    ? () => _deleteHonk(details.honk.id)
+                    : null,
+              );
             },
           );
         },
@@ -78,9 +140,15 @@ class _HonkDetailsPageState extends State<HonkDetailsPage> {
 }
 
 class _HonkDetailsView extends StatelessWidget {
-  const _HonkDetailsView({required this.details});
+  const _HonkDetailsView({
+    required this.details,
+    required this.isDeleting,
+    required this.onDelete,
+  });
 
   final HonkDetails details;
+  final bool isDeleting;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +176,7 @@ class _HonkDetailsView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 _DetailRow(
-                  label: 'From',
+                  label: 'Sender',
                   value:
                       details.senderUsername ??
                       details.honk.userId.substring(0, 8),
@@ -116,10 +184,30 @@ class _HonkDetailsView extends StatelessWidget {
                 _DetailRow(label: 'Created', value: createdAt),
                 _DetailRow(label: 'Expires', value: expiresAt),
                 _DetailRow(label: 'Time left', value: expiresIn),
+                if (details.honk.details != null &&
+                    details.honk.details!.trim().isNotEmpty)
+                  _DetailRow(label: 'Details', value: details.honk.details!),
               ],
             ),
           ),
         ),
+        if (onDelete != null) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonalIcon(
+              onPressed: isDeleting ? null : onDelete,
+              icon: isDeleting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.delete_outline),
+              label: Text(isDeleting ? 'Deleting...' : 'Delete Honk'),
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         Text(
           'Honk ID: ${details.honk.id}',

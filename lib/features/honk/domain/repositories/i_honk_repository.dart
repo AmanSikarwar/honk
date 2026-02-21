@@ -5,11 +5,13 @@ import '../entities/honk_event.dart';
 import '../entities/honk_details.dart';
 
 abstract class IHonkRepository {
-  TaskEither<MainFailure, Unit> broadcastHonk(HonkEvent honk);
+  TaskEither<MainFailure, HonkEvent> broadcastHonk(HonkEvent honk);
 
   Stream<Either<MainFailure, List<HonkEvent>>> watchFriendsHonks();
 
   TaskEither<MainFailure, HonkDetails?> fetchHonkDetails({
     required String honkId,
   });
+
+  TaskEither<MainFailure, Unit> deleteHonk({required String honkId});
 }

@@ -6,6 +6,7 @@ type HonkRecord = {
   user_id: string
   location: string
   status: string
+  details: string | null
   created_at: string
   expires_at: string
 }
@@ -161,7 +162,10 @@ Deno.serve(async (req) => {
 
     const accessToken = await getFirebaseAccessToken(firebaseConfig)
     const title = 'New Honk'
-    const body = `${senderName} honked: Heading to ${honk.location}!`
+    const trimmedDetails = honk.details?.trim()
+    const body = trimmedDetails != null && trimmedDetails.length > 0
+      ? `${senderName} honked: Heading to ${honk.location}! ${trimmedDetails}`
+      : `${senderName} honked: Heading to ${honk.location}!`
 
     const deliveryResult = await Promise.allSettled(
       tokens.map((token) =>
@@ -177,6 +181,7 @@ Deno.serve(async (req) => {
             user_id: honk.user_id,
             location: honk.location,
             status: honk.status,
+            details: honk.details ?? '',
             created_at: honk.created_at,
             expires_at: honk.expires_at,
           },

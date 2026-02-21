@@ -19,6 +19,7 @@ class ActionPadCubit extends Cubit<ActionPadState> {
     required String userId,
     required String location,
     required String status,
+    String? details,
     Duration ttl = const Duration(minutes: 30),
   }) async {
     emit(const ActionPadState.submitting());
@@ -29,6 +30,7 @@ class ActionPadCubit extends Cubit<ActionPadState> {
       userId: userId,
       location: location,
       status: status,
+      details: details,
       createdAt: now,
       expiresAt: now.add(ttl),
     );
@@ -36,7 +38,7 @@ class ActionPadCubit extends Cubit<ActionPadState> {
     final result = await _honkRepository.broadcastHonk(honk).run();
     result.match(
       (failure) => emit(ActionPadState.failure(failure)),
-      (_) => emit(ActionPadState.success(honk)),
+      (createdHonk) => emit(ActionPadState.success(createdHonk)),
     );
   }
 

@@ -42,7 +42,7 @@ packages:
     source: hosted
     version: "2.0.3"
   app_links:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: app_links
       sha256: "5f88447519add627fe1cbcab4fd1da3d4fed15b9baf29f28b22535c95ecee3e8"
@@ -406,6 +406,11 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.1"
+  flutter_localizations:
+    dependency: transitive
+    description: flutter
+    source: sdk
+    version: "0.0.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -416,6 +421,22 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  forui:
+    dependency: "direct main"
+    description:
+      name: forui
+      sha256: "68e35cc6e989d960bcc4d31e49f22464e80f4c1f2d40c7ad63c1ba74386c209c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.19.0"
+  forui_assets:
+    dependency: transitive
+    description:
+      name: forui_assets
+      sha256: ba80eeee720f517468bc06974a83905a183fa148ab34ea080b8fe7909806218c
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.19.0"
   fpdart:
     dependency: "direct main"
     description:
@@ -616,6 +637,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.12.0"
+  intl:
+    dependency: transitive
+    description:
+      name: intl
+      sha256: "3df61194eb431efc39c4ceba583b95633a403f46c9fd341e550ce0bfa50e9aa5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.20.2"
   io:
     dependency: transitive
     description:
@@ -744,6 +773,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
+  nitrogen_types:
+    dependency: transitive
+    description:
+      name: nitrogen_types
+      sha256: "5d4ec453aea14e34607bc6021ff1381192e8fcd8541bf103638baa4d013e668f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.0+1"
   objective_c:
     dependency: transitive
     description:
@@ -1061,6 +1098,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
+  sugar:
+    dependency: transitive
+    description:
+      name: sugar
+      sha256: a0a97f1d3552a3ef4cbec7c6e62c7b52c151cd5c11e984e8311700a918f73dc5
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.0"
   supabase:
     dependency: transitive
     description:
@@ -1263,4 +1308,4 @@ packages:
     version: "2.1.0"
 sdks:
   dart: ">=3.12.0-162.0.dev <4.0.0"
-  flutter: ">=3.38.4"
+  flutter: ">=3.41.0"

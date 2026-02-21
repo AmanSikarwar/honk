@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "27942246161",
+    "project_id": "project-honk",
+    "storage_bucket": "project-honk.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:27942246161:android:0148ae7ef036dff7361eb0",
+        "android_client_info": {
+          "package_name": "io.github.amansikarwar.honk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHI-XieZjorngMrvm2PZTESLdZEeUNzDE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -19,6 +19,7 @@ type WebhookPayload = {
 }
 
 type FriendshipRow = {
+  user_id: string
   friend_id: string
 }
 
@@ -39,12 +40,23 @@ type FirebaseConfig = {
 
 const supabaseUrl = getRequiredEnv('SUPABASE_URL')
 const serviceRoleKey = getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY')
+const cachedSecretTtlMs = 60 * 1000
+let cachedWebhookSecret: string | null = null
+let cachedWebhookSecretAt = 0
 
 const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
 
 Deno.serve(async (req) => {
   try {
-    if (!isAuthorizedWebhookRequest(req)) {
+    const webhookSecret = await readWebhookSecret()
+    if (webhookSecret == null) {
+      return Response.json(
+        { error: 'Webhook secret is not configured.' },
+        { status: 503 },
+      )
+    }
+
+    if (!isAuthorizedWebhookRequest(req, webhookSecret)) {
       return Response.json(
         { error: 'Unauthorized webhook request.' },
         { status: 401 },
@@ -74,9 +86,9 @@ Deno.serve(async (req) => {
         .maybeSingle<SenderProfileRow>(),
       supabaseAdmin
         .from('friendships')
-        .select('friend_id')
-        .eq('user_id', honk.user_id)
+        .select('user_id, friend_id')
         .eq('status', 'accepted')
+        .or(`user_id.eq.${honk.user_id},friend_id.eq.${honk.user_id}`)
         .returns<FriendshipRow[]>(),
     ])
 
@@ -89,7 +101,15 @@ Deno.serve(async (req) => {
     }
 
     const senderName = senderProfileResult.data?.username ?? 'Your friend'
-    const friendIds = (friendsResult.data ?? []).map((row) => row.friend_id)
+    const friendIds = Array.from(
+      new Set(
+        (friendsResult.data ?? [])
+          .map((row) =>
+            row.user_id == honk.user_id ? row.friend_id : row.user_id,
+          )
+          .filter((friendId) => friendId.length > 0 && friendId != honk.user_id),
+      ),
+    )
 
     if (friendIds.length === 0) {
       return Response.json({ delivered: 0, failed: 0, skipped: true })
@@ -186,7 +206,7 @@ function getRequiredEnv(key: string): string {
   return value
 }
 
-function isAuthorizedWebhookRequest(req: Request): boolean {
+function isAuthorizedWebhookRequest(req: Request, webhookSecret: string): boolean {
   const incomingSecret = req.headers.get('x-honk-webhook-secret')
   const authorization = req.headers.get('authorization')
   if (incomingSecret == null || authorization == null) {
@@ -202,13 +222,42 @@ function isAuthorizedWebhookRequest(req: Request): boolean {
     return false
   }
 
-  const configuredSecret = Deno.env.get('HONK_PUSH_WEBHOOK_SECRET')
-  if (configuredSecret != null && configuredSecret.length > 0) {
-    return incomingSecret === configuredSecret
+  return incomingSecret === webhookSecret
+}
+
+async function readWebhookSecret(): Promise<string | null> {
+  const envSecret = Deno.env.get('HONK_PUSH_WEBHOOK_SECRET')
+  if (envSecret != null && envSecret.length > 0) {
+    return envSecret
   }
 
-  // Fallback: require secret to match the provided bearer token.
-  return incomingSecret === bearerToken
+  const now = Date.now()
+  if (
+    cachedWebhookSecret != null &&
+    now - cachedWebhookSecretAt < cachedSecretTtlMs
+  ) {
+    return cachedWebhookSecret
+  }
+
+  const result = await supabaseAdmin
+    .from('runtime_config')
+    .select('value')
+    .eq('key', 'honk_push_webhook_secret')
+    .maybeSingle<{ value: string }>()
+
+  if (result.error != null) {
+    console.error('Failed to read runtime webhook secret:', result.error)
+    return null
+  }
+
+  const secret = result.data?.value
+  if (secret == null || secret.length === 0) {
+    return null
+  }
+
+  cachedWebhookSecret = secret
+  cachedWebhookSecretAt = now
+  return secret
 }
 
 function readFirebaseConfig(): FirebaseConfig | null {

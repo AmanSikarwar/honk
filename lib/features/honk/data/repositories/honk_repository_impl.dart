@@ -101,12 +101,19 @@ class HonkRepositoryImpl implements IHonkRepository {
     friendshipsSubscription = _supabase
         .from('friendships')
         .stream(primaryKey: ['user_id', 'friend_id'])
-        .inFilter('user_id', [user.id])
         .listen((rows) {
           final friendIds = rows
               .where((row) => row['status'] == 'accepted')
-              .map((row) => row['friend_id'])
+              .map((row) {
+                final userId = row['user_id'] as String?;
+                final friendId = row['friend_id'] as String?;
+                if (userId == null || friendId == null) {
+                  return null;
+                }
+                return userId == user.id ? friendId : userId;
+              })
               .whereType<String>()
+              .where((id) => id != user.id)
               .toSet();
           unawaited(bindHonksForFriends(friendIds));
         }, onError: emitFailure);

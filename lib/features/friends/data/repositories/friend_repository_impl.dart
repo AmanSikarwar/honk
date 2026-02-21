@@ -27,7 +27,7 @@ class FriendRepositoryImpl implements IFriendRepository {
       final response = await _supabase
           .from('profiles')
           .select('id, username, fcm_token')
-          .ilike('username', '%$trimmedQuery%')
+          .ilike('username', '%${_escapeLikePattern(trimmedQuery)}%')
           .neq('id', currentUserId)
           .limit(20);
 
@@ -64,15 +64,23 @@ class FriendRepositoryImpl implements IFriendRepository {
 
       final friendshipsResponse = await _supabase
           .from('friendships')
-          .select('friend_id')
-          .eq('user_id', currentUserId)
+          .select('user_id, friend_id, status')
           .eq('status', 'accepted');
 
       final friendshipRows = List<Map<String, dynamic>>.from(
         friendshipsResponse as List,
       );
       final friendIds = friendshipRows
-          .map((row) => row['friend_id'] as String)
+          .map((row) {
+            final userId = row['user_id'] as String?;
+            final friendId = row['friend_id'] as String?;
+            if (userId == null || friendId == null) {
+              return null;
+            }
+            return userId == currentUserId ? friendId : userId;
+          })
+          .whereType<String>()
+          .where((id) => id != currentUserId)
           .toSet()
           .toList(growable: false);
 
@@ -106,5 +114,12 @@ class FriendRepositoryImpl implements IFriendRepository {
       );
     }
     return userId;
+  }
+
+  String _escapeLikePattern(String input) {
+    return input
+        .replaceAll(r'\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_');
   }
 }

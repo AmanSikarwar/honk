@@ -31,15 +31,14 @@ type FriendProfileRow = {
   fcm_token: string | null
 }
 
+type FirebaseConfig = {
+  projectId: string
+  clientEmail: string
+  privateKey: string
+}
+
 const supabaseUrl = getRequiredEnv('SUPABASE_URL')
 const serviceRoleKey = getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY')
-const firebaseProjectId = getRequiredEnv('FIREBASE_PROJECT_ID')
-const firebaseClientEmail = getRequiredEnv('FIREBASE_CLIENT_EMAIL')
-const webhookSecret = getRequiredEnv('HONK_PUSH_WEBHOOK_SECRET')
-const firebasePrivateKey = getRequiredEnv('FIREBASE_PRIVATE_KEY').replace(
-  /\\n/g,
-  '\n',
-)
 
 const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
 
@@ -129,7 +128,18 @@ Deno.serve(async (req) => {
       })
     }
 
-    const accessToken = await getFirebaseAccessToken()
+    const firebaseConfig = readFirebaseConfig()
+    if (firebaseConfig == null) {
+      return Response.json({
+        delivered: 0,
+        failed: 0,
+        skipped: true,
+        reason:
+          'Missing Firebase configuration (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY).',
+      })
+    }
+
+    const accessToken = await getFirebaseAccessToken(firebaseConfig)
     const title = 'New Honk'
     const body = `${senderName} honked: Heading to ${honk.location}!`
 
@@ -137,7 +147,7 @@ Deno.serve(async (req) => {
       tokens.map((token) =>
         sendFcmMessage({
           accessToken,
-          projectId: firebaseProjectId,
+          projectId: firebaseConfig.projectId,
           token,
           title,
           body,
@@ -178,7 +188,50 @@ function getRequiredEnv(key: string): string {
 
 function isAuthorizedWebhookRequest(req: Request): boolean {
   const incomingSecret = req.headers.get('x-honk-webhook-secret')
-  return incomingSecret != null && incomingSecret === webhookSecret
+  const authorization = req.headers.get('authorization')
+  if (incomingSecret == null || authorization == null) {
+    return false
+  }
+
+  if (!authorization.toLowerCase().startsWith('bearer ')) {
+    return false
+  }
+
+  const bearerToken = authorization.substring(7)
+  if (bearerToken.length === 0) {
+    return false
+  }
+
+  const configuredSecret = Deno.env.get('HONK_PUSH_WEBHOOK_SECRET')
+  if (configuredSecret != null && configuredSecret.length > 0) {
+    return incomingSecret === configuredSecret
+  }
+
+  // Fallback: require secret to match the provided bearer token.
+  return incomingSecret === bearerToken
+}
+
+function readFirebaseConfig(): FirebaseConfig | null {
+  const projectId = Deno.env.get('FIREBASE_PROJECT_ID')
+  const clientEmail = Deno.env.get('FIREBASE_CLIENT_EMAIL')
+  const privateKeyRaw = Deno.env.get('FIREBASE_PRIVATE_KEY')
+
+  if (
+    projectId == null ||
+    projectId.length === 0 ||
+    clientEmail == null ||
+    clientEmail.length === 0 ||
+    privateKeyRaw == null ||
+    privateKeyRaw.length === 0
+  ) {
+    return null
+  }
+
+  return {
+    projectId,
+    clientEmail,
+    privateKey: privateKeyRaw.replace(/\\n/g, '\n'),
+  }
 }
 
 type SendFcmMessageArgs = {
@@ -256,12 +309,12 @@ function calculateTtlSeconds(expiresAtIso: string): number {
   return Math.min(ttlSeconds, maxTtlSeconds)
 }
 
-async function getFirebaseAccessToken(): Promise<string> {
+async function getFirebaseAccessToken(config: FirebaseConfig): Promise<string> {
   const auth = new GoogleAuth({
     credentials: {
-      client_email: firebaseClientEmail,
-      private_key: firebasePrivateKey,
-      project_id: firebaseProjectId,
+      client_email: config.clientEmail,
+      private_key: config.privateKey,
+      project_id: config.projectId,
     },
     scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
   })

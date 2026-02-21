@@ -2,10 +2,82 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/router/app_router.dart';
+import '../../domain/entities/profile.dart';
 import '../cubit/friend_management_cubit.dart';
 
 class FriendManagementPage extends StatelessWidget {
   const FriendManagementPage({super.key});
+
+  void _showProfileDetailsSheet(
+    BuildContext context, {
+    required Profile profile,
+    required bool alreadyFriend,
+    required VoidCallback? onAddFriend,
+  }) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      child: Text(
+                        profile.username.substring(0, 1).toUpperCase(),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            profile.username,
+                            style: Theme.of(sheetContext).textTheme.titleMedium,
+                          ),
+                          Text(
+                            profile.id,
+                            style: Theme.of(sheetContext).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  profile.fcmToken == null || profile.fcmToken!.isEmpty
+                      ? 'Notifications: Not synced'
+                      : 'Notifications: Token synced',
+                ),
+                const SizedBox(height: 16),
+                if (!alreadyFriend && onAddFriend != null)
+                  FilledButton.icon(
+                    onPressed: () {
+                      Navigator.of(sheetContext).pop();
+                      onAddFriend();
+                    },
+                    icon: const Icon(Icons.person_add_alt_1),
+                    label: const Text('Add friend'),
+                  )
+                else
+                  FilledButton.tonalIcon(
+                    onPressed: null,
+                    icon: const Icon(Icons.check),
+                    label: const Text('Already your friend'),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +118,16 @@ class FriendManagementPage extends StatelessWidget {
                         final profile = state.searchResults[index];
                         final alreadyFriend = friendIds.contains(profile.id);
                         return ListTile(
+                          onTap: () => _showProfileDetailsSheet(
+                            context,
+                            profile: profile,
+                            alreadyFriend: alreadyFriend,
+                            onAddFriend: alreadyFriend
+                                ? null
+                                : () => context
+                                      .read<FriendManagementCubit>()
+                                      .addFriend(profile.id),
+                          ),
                           dense: true,
                           title: Text(profile.username),
                           subtitle: Text(profile.id),
@@ -99,9 +181,16 @@ class FriendManagementPage extends StatelessWidget {
                           itemBuilder: (context, index) {
                             final friend = state.friends[index];
                             return ListTile(
+                              onTap: () => _showProfileDetailsSheet(
+                                context,
+                                profile: friend,
+                                alreadyFriend: true,
+                                onAddFriend: null,
+                              ),
                               title: Text(friend.username),
                               subtitle: Text(friend.id),
                               leading: const Icon(Icons.person_outline),
+                              trailing: const Icon(Icons.chevron_right),
                             );
                           },
                         ),

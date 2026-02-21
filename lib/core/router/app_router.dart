@@ -12,7 +12,9 @@ import '../../features/friends/presentation/cubit/friend_management_cubit.dart';
 import '../../features/friends/presentation/pages/friend_management_page.dart';
 import '../../features/honk/presentation/bloc/honk_feed_bloc.dart';
 import '../../features/honk/presentation/cubit/action_pad_cubit.dart';
+import '../../features/honk/domain/repositories/i_honk_repository.dart';
 import '../../features/honk/presentation/pages/home_dashboard_page.dart';
+import '../../features/honk/presentation/pages/honk_details_page.dart';
 import '../../features/notifications/presentation/cubit/notification_sync_cubit.dart';
 import '../../features/notifications/presentation/pages/settings_page.dart';
 import '../di/injection.dart';
@@ -25,7 +27,6 @@ class HomeRoute extends GoRouteData with $HomeRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    final openedHonkId = state.uri.queryParameters['opened_honk_id'];
     return MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -34,7 +35,22 @@ class HomeRoute extends GoRouteData with $HomeRoute {
         ),
         BlocProvider(create: (_) => getIt<ActionPadCubit>()),
       ],
-      child: HomeDashboardPage(initialOpenedHonkId: openedHonkId),
+      child: const HomeDashboardPage(),
+    );
+  }
+}
+
+@TypedGoRoute<HonkDetailsRoute>(path: '/honks/:honkId')
+class HonkDetailsRoute extends GoRouteData with $HonkDetailsRoute {
+  final String honkId;
+
+  const HonkDetailsRoute({required this.honkId});
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return HonkDetailsPage(
+      honkId: honkId,
+      honkRepository: getIt<IHonkRepository>(),
     );
   }
 }

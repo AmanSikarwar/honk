@@ -107,11 +107,7 @@ class _HonkAppState extends State<HonkApp> {
   }
 
   void _navigateToOpenedHonk(String honkId) {
-    final location = Uri(
-      path: const HomeRoute().location,
-      queryParameters: {'opened_honk_id': honkId},
-    ).toString();
-    _router.go(location);
+    _router.go(HonkDetailsRoute(honkId: honkId).location);
   }
 
   @override

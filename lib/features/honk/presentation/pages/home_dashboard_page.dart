@@ -7,53 +7,11 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../bloc/honk_feed_bloc.dart';
 import '../cubit/action_pad_cubit.dart';
 
-class HomeDashboardPage extends StatefulWidget {
-  const HomeDashboardPage({super.key, this.initialOpenedHonkId});
+class HomeDashboardPage extends StatelessWidget {
+  const HomeDashboardPage({super.key});
 
-  final String? initialOpenedHonkId;
-
-  @override
-  State<HomeDashboardPage> createState() => _HomeDashboardPageState();
-}
-
-class _HomeDashboardPageState extends State<HomeDashboardPage> {
-  bool _hasHandledInitialOpenedHonk = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _handleInitialOpenedHonk();
-  }
-
-  @override
-  void didUpdateWidget(covariant HomeDashboardPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.initialOpenedHonkId != widget.initialOpenedHonkId) {
-      _hasHandledInitialOpenedHonk = false;
-      _handleInitialOpenedHonk();
-    }
-  }
-
-  void _handleInitialOpenedHonk() {
-    if (_hasHandledInitialOpenedHonk) {
-      return;
-    }
-
-    final honkId = widget.initialOpenedHonkId;
-    if (honkId == null || honkId.isEmpty) {
-      return;
-    }
-
-    _hasHandledInitialOpenedHonk = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Opened honk: $honkId')));
-    });
+  void _openHonkDetails(BuildContext context, String honkId) {
+    HonkDetailsRoute(honkId: honkId).push(context);
   }
 
   @override
@@ -189,11 +147,13 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
                           itemBuilder: (context, index) {
                             final honk = honks[index];
                             return ListTile(
+                              onTap: () => _openHonkDetails(context, honk.id),
                               title: Text(honk.location),
                               subtitle: Text(
                                 '${honk.status} • ${honk.createdAt.toLocal()}',
                               ),
                               leading: const Icon(Icons.campaign_outlined),
+                              trailing: const Icon(Icons.chevron_right),
                             );
                           },
                         );

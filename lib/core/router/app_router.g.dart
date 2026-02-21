@@ -8,6 +8,7 @@ part of 'app_router.dart';
 
 List<RouteBase> get $appRoutes => [
   $homeRoute,
+  $honkDetailsRoute,
   $friendManagementRoute,
   $settingsRoute,
   $loginRoute,
@@ -25,6 +26,35 @@ mixin $HomeRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $honkDetailsRoute => GoRouteData.$route(
+  path: '/honks/:honkId',
+  factory: $HonkDetailsRoute._fromState,
+);
+
+mixin $HonkDetailsRoute on GoRouteData {
+  static HonkDetailsRoute _fromState(GoRouterState state) =>
+      HonkDetailsRoute(honkId: state.pathParameters['honkId']!);
+
+  HonkDetailsRoute get _self => this as HonkDetailsRoute;
+
+  @override
+  String get location =>
+      GoRouteData.$location('/honks/${Uri.encodeComponent(_self.honkId)}');
 
   @override
   void go(BuildContext context) => context.go(location);

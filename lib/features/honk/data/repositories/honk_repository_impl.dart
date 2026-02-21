@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/data/failure_mapper.dart';
 import '../../../../core/domain/main_failure.dart';
 import '../../domain/entities/honk_event.dart';
+import '../../domain/entities/honk_details.dart';
 import '../../domain/repositories/i_honk_repository.dart';
 import '../models/honk_event_model.dart';
 
@@ -37,6 +38,45 @@ class HonkRepositoryImpl implements IHonkRepository {
       });
 
       return unit;
+    }, mapErrorToMainFailure);
+  }
+
+  @override
+  TaskEither<MainFailure, HonkDetails?> fetchHonkDetails({
+    required String honkId,
+  }) {
+    return TaskEither<MainFailure, HonkDetails?>.tryCatch(() async {
+      final trimmedHonkId = honkId.trim();
+      if (trimmedHonkId.isEmpty) {
+        return null;
+      }
+
+      final honkResponse = await _supabase
+          .from('honks')
+          .select('id, user_id, location, status, created_at, expires_at')
+          .eq('id', trimmedHonkId)
+          .maybeSingle();
+
+      if (honkResponse == null) {
+        return null;
+      }
+
+      final honk = HonkEventModel.fromJson(
+        Map<String, dynamic>.from(honkResponse),
+      ).toDomain();
+
+      final profileResponse = await _supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', honk.userId)
+          .maybeSingle();
+
+      return HonkDetails(
+        honk: honk,
+        senderUsername: profileResponse == null
+            ? null
+            : profileResponse['username'] as String?,
+      );
     }, mapErrorToMainFailure);
   }
 

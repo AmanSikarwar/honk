@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:injectable/injectable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +18,10 @@ abstract class RegisterModule {
 
   @lazySingleton
   FirebaseMessaging get firebaseMessaging => FirebaseMessaging.instance;
+
+  @lazySingleton
+  FlutterLocalNotificationsPlugin get flutterLocalNotificationsPlugin =>
+      FlutterLocalNotificationsPlugin();
 
   @preResolve
   Future<SharedPreferences> get sharedPreferences =>

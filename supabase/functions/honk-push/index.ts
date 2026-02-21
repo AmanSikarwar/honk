@@ -104,6 +104,16 @@ Deno.serve(async (req) => {
       return Response.json({ delivered: 0, failed: 0, skipped: true })
     }
 
+    const ttlSeconds = calculateTtlSeconds(honk.expires_at)
+    if (ttlSeconds <= 0) {
+      return Response.json({
+        delivered: 0,
+        failed: 0,
+        skipped: true,
+        reason: 'Honk already expired.',
+      })
+    }
+
     const accessToken = await getFirebaseAccessToken()
     const title = 'New Honk'
     const body = `${senderName} honked: Heading to ${honk.location}!`
@@ -116,6 +126,7 @@ Deno.serve(async (req) => {
           token,
           title,
           body,
+          ttlSeconds,
           data: {
             honk_id: honk.id,
             user_id: honk.user_id,
@@ -156,10 +167,13 @@ type SendFcmMessageArgs = {
   token: string
   title: string
   body: string
+  ttlSeconds: number
   data: Record<string, string>
 }
 
 async function sendFcmMessage(args: SendFcmMessageArgs): Promise<void> {
+  const apnsExpiration = Math.floor(Date.now() / 1000) + args.ttlSeconds
+
   const response = await fetch(
     `https://fcm.googleapis.com/v1/projects/${args.projectId}/messages:send`,
     {
@@ -178,11 +192,16 @@ async function sendFcmMessage(args: SendFcmMessageArgs): Promise<void> {
           data: args.data,
           android: {
             priority: 'high',
+            ttl: `${args.ttlSeconds}s`,
             notification: {
               channel_id: 'honk_notifications',
             },
           },
           apns: {
+            headers: {
+              'apns-priority': '10',
+              'apns-expiration': String(apnsExpiration),
+            },
             payload: {
               aps: {
                 sound: 'default',
@@ -200,6 +219,21 @@ async function sendFcmMessage(args: SendFcmMessageArgs): Promise<void> {
       `FCM request failed with status ${response.status}: ${errorBody}`,
     )
   }
+}
+
+function calculateTtlSeconds(expiresAtIso: string): number {
+  const maxTtlSeconds = 2_419_200
+  const expiresAtMillis = Date.parse(expiresAtIso)
+  if (!Number.isFinite(expiresAtMillis)) {
+    return 0
+  }
+
+  const ttlSeconds = Math.floor((expiresAtMillis - Date.now()) / 1000)
+  if (ttlSeconds <= 0) {
+    return 0
+  }
+
+  return Math.min(ttlSeconds, maxTtlSeconds)
 }
 
 async function getFirebaseAccessToken(): Promise<string> {

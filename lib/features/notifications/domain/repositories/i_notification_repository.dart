@@ -7,5 +7,7 @@ abstract class INotificationRepository {
 
   TaskEither<MainFailure, String?> getFcmToken();
 
+  Stream<String> onTokenRefresh();
+
   TaskEither<MainFailure, Unit> syncFcmToken();
 }

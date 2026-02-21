@@ -10,6 +10,8 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:firebase_messaging/firebase_messaging.dart' as _i892;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart'
+    as _i163;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:google_sign_in/google_sign_in.dart' as _i116;
 import 'package:injectable/injectable.dart' as _i526;
@@ -33,8 +35,12 @@ import '../../features/honk/presentation/bloc/honk_feed_bloc.dart' as _i86;
 import '../../features/honk/presentation/cubit/action_pad_cubit.dart' as _i142;
 import '../../features/notifications/data/repositories/notification_repository_impl.dart'
     as _i361;
+import '../../features/notifications/data/services/notification_runtime_service.dart'
+    as _i51;
 import '../../features/notifications/domain/repositories/i_notification_repository.dart'
     as _i809;
+import '../../features/notifications/domain/services/i_notification_runtime_service.dart'
+    as _i111;
 import '../../features/notifications/presentation/cubit/notification_sync_cubit.dart'
     as _i559;
 import '../deep_link/deep_link_handler.dart' as _i633;
@@ -59,6 +65,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i892.FirebaseMessaging>(
       () => registerModule.firebaseMessaging,
     );
+    gh.lazySingleton<_i163.FlutterLocalNotificationsPlugin>(
+      () => registerModule.flutterLocalNotificationsPlugin,
+    );
     gh.lazySingleton<_i31.IHonkRepository>(
       () => _i1038.HonkRepositoryImpl(gh<_i454.SupabaseClient>()),
     );
@@ -69,6 +78,12 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i361.NotificationRepositoryImpl(
         gh<_i892.FirebaseMessaging>(),
         gh<_i454.SupabaseClient>(),
+      ),
+    );
+    gh.lazySingleton<_i111.INotificationRuntimeService>(
+      () => _i51.NotificationRuntimeService(
+        gh<_i892.FirebaseMessaging>(),
+        gh<_i163.FlutterLocalNotificationsPlugin>(),
       ),
     );
     gh.factory<_i559.NotificationSyncCubit>(

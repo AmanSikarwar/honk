@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,12 +12,19 @@ import 'package:honk/core/env/env.dart';
 import 'package:honk/core/router/app_router.dart';
 import 'package:honk/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:honk/features/notifications/domain/repositories/i_notification_repository.dart';
+import 'package:honk/features/notifications/domain/services/i_notification_runtime_service.dart';
 import 'package:honk/firebase_options.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
+
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   await Supabase.initialize(
     url: Env.supabaseUrl,
@@ -41,8 +49,11 @@ class _HonkAppState extends State<HonkApp> {
   late final GoRouter _router;
   late final DeepLinkHandler _deepLinkHandler;
   late final INotificationRepository _notificationRepository;
+  late final INotificationRuntimeService _notificationRuntimeService;
   StreamSubscription? _deepLinkSubscription;
   StreamSubscription<AuthState>? _authStateSubscription;
+  StreamSubscription<String>? _fcmTokenRefreshSubscription;
+  StreamSubscription<String>? _notificationOpenSubscription;
 
   Future<void> _handleInitialDeepLink() async {
     final deepLink = await _deepLinkHandler.getInitialAuthDeepLink();
@@ -81,6 +92,18 @@ class _HonkAppState extends State<HonkApp> {
     }
   }
 
+  void _handleNotificationOpened(String honkId) {
+    if (honkId.isEmpty) {
+      return;
+    }
+
+    if (_authBloc.state is! Authenticated) {
+      return;
+    }
+
+    _router.go(const HomeRoute().location);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -88,6 +111,11 @@ class _HonkAppState extends State<HonkApp> {
     _router = createAppRouter(_authBloc);
     _deepLinkHandler = getIt<DeepLinkHandler>();
     _notificationRepository = getIt<INotificationRepository>();
+    _notificationRuntimeService = getIt<INotificationRuntimeService>();
+
+    _notificationOpenSubscription = _notificationRuntimeService.openedHonkIds
+        .listen(_handleNotificationOpened);
+    unawaited(_notificationRuntimeService.initialize());
 
     _authBloc.add(const AuthEvent.checkAuthStatus());
     _syncFcmTokenForCurrentUser();
@@ -101,6 +129,11 @@ class _HonkAppState extends State<HonkApp> {
     _authStateSubscription = _authBloc.stream.listen((state) {
       state.whenOrNull(authenticated: (_) => _syncFcmTokenForCurrentUser());
     });
+    _fcmTokenRefreshSubscription = _notificationRepository
+        .onTokenRefresh()
+        .listen((_) {
+          unawaited(_notificationRepository.syncFcmToken().run());
+        });
   }
 
   Future<void> _syncFcmTokenForCurrentUser() async {
@@ -116,6 +149,9 @@ class _HonkAppState extends State<HonkApp> {
   void dispose() {
     _deepLinkSubscription?.cancel();
     _authStateSubscription?.cancel();
+    _fcmTokenRefreshSubscription?.cancel();
+    _notificationOpenSubscription?.cancel();
+    unawaited(_notificationRuntimeService.dispose());
     _authBloc.close();
     super.dispose();
   }

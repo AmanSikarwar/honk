@@ -46,6 +46,9 @@ class NotificationRepositoryImpl implements INotificationRepository {
   }
 
   @override
+  Stream<String> onTokenRefresh() => _messaging.onTokenRefresh;
+
+  @override
   TaskEither<MainFailure, Unit> syncFcmToken() {
     final user = _supabase.auth.currentUser;
     if (user == null) {

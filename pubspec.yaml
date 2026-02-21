@@ -7,17 +7,34 @@ environment:
   sdk: ^3.12.0-162.0.dev
 
 dependencies:
-  cloud_firestore: ^6.1.2
-  firebase_auth: ^6.1.4
+  bloc: ^9.2.0
+  envied: ^1.3.3
   firebase_core: ^4.4.0
   firebase_messaging: ^16.1.1
   flutter:
     sdk: flutter
+  flutter_bloc: ^9.1.1
+  flutter_local_notifications: ^20.1.0
+  fpdart: ^1.2.0
+  freezed_annotation: ^3.1.0
+  get_it: ^9.2.1
+  go_router: ^17.1.0
+  google_sign_in: ^7.2.0
+  injectable: ^2.7.1+4
+  json_annotation: ^4.11.0
+  shared_preferences: ^2.5.4
+  supabase_flutter: ^2.12.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  build_runner: ^2.11.1
+  injectable_generator: ^2.12.0
+  json_serializable: ^6.13.0
+  envied_generator: ^1.3.3
+  freezed: ^3.2.5
+  go_router_builder: ^4.2.0
 
 flutter:
   uses-material-design: true

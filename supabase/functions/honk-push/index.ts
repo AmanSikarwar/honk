@@ -1,13 +1,25 @@
 import { GoogleAuth } from 'npm:google-auth-library@9.15.1'
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4'
 
-type HonkRecord = {
+type HonkActivityRecord = {
   id: string
-  user_id: string
+  creator_id: string
+  activity: string
   location: string
-  status: string
   details: string | null
-  created_at: string
+  starts_at: string
+  recurrence_rrule: string | null
+  recurrence_timezone: string
+  status_reset_seconds: number
+  invite_code: string
+}
+
+type HonkParticipantStatusRecord = {
+  activity_id: string
+  user_id: string
+  occurrence_start: string
+  status_key: string
+  updated_at: string
   expires_at: string
 }
 
@@ -15,22 +27,31 @@ type WebhookPayload = {
   type: 'INSERT' | 'UPDATE' | 'DELETE'
   table: string
   schema: string
-  record: HonkRecord | null
-  old_record: HonkRecord | null
+  record: Record<string, unknown> | null
+  old_record: Record<string, unknown> | null
 }
 
-type FriendshipRow = {
+type ParticipantRow = {
   user_id: string
-  friend_id: string
 }
 
-type SenderProfileRow = {
+type ProfileWithTokenRow = {
+  id: string
+  fcm_token: string | null
+}
+
+type ProfileNameRow = {
   username: string | null
 }
 
-type FriendProfileRow = {
+type StatusOptionRow = {
+  label: string
+}
+
+type ActivityCoreRow = {
   id: string
-  fcm_token: string | null
+  activity: string
+  location: string
 }
 
 type FirebaseConfig = {
@@ -65,134 +86,19 @@ Deno.serve(async (req) => {
     }
 
     const payload = (await req.json()) as WebhookPayload
-
-    if (payload.schema !== 'public' || payload.table !== 'honks') {
-      return Response.json({
-        skipped: true,
-        reason: 'Unsupported table or schema.',
-      })
+    if (payload.schema !== 'public') {
+      return Response.json({ skipped: true, reason: 'Unsupported schema.' })
     }
 
-    if (payload.type !== 'INSERT' || payload.record == null) {
-      return Response.json({ skipped: true, reason: 'Not an insert event.' })
+    if (payload.table === 'honk_activities') {
+      return await handleActivityCreated(payload)
     }
 
-    const honk = payload.record
-
-    const [senderProfileResult, friendsResult] = await Promise.all([
-      supabaseAdmin
-        .from('profiles')
-        .select('username')
-        .eq('id', honk.user_id)
-        .maybeSingle<SenderProfileRow>(),
-      supabaseAdmin
-        .from('friendships')
-        .select('user_id, friend_id')
-        .eq('status', 'accepted')
-        .or(`user_id.eq.${honk.user_id},friend_id.eq.${honk.user_id}`)
-        .returns<FriendshipRow[]>(),
-    ])
-
-    if (senderProfileResult.error) {
-      throw senderProfileResult.error
+    if (payload.table === 'honk_participant_statuses') {
+      return await handleParticipantStatusUpdated(payload)
     }
 
-    if (friendsResult.error) {
-      throw friendsResult.error
-    }
-
-    const senderName = senderProfileResult.data?.username ?? 'Your friend'
-    const friendIds = Array.from(
-      new Set(
-        (friendsResult.data ?? [])
-          .map((row) =>
-            row.user_id == honk.user_id ? row.friend_id : row.user_id,
-          )
-          .filter((friendId) => friendId.length > 0 && friendId != honk.user_id),
-      ),
-    )
-
-    if (friendIds.length === 0) {
-      return Response.json({ delivered: 0, failed: 0, skipped: true })
-    }
-
-    const friendProfilesResult = await supabaseAdmin
-      .from('profiles')
-      .select('id, fcm_token')
-      .in('id', friendIds)
-      .not('fcm_token', 'is', null)
-      .returns<FriendProfileRow[]>()
-
-    if (friendProfilesResult.error) {
-      throw friendProfilesResult.error
-    }
-
-    const tokens = Array.from(
-      new Set(
-        (friendProfilesResult.data ?? [])
-          .map((profile) => profile.fcm_token)
-          .filter((token): token is string => token != null && token.length > 0),
-      ),
-    )
-
-    if (tokens.length == 0) {
-      return Response.json({ delivered: 0, failed: 0, skipped: true })
-    }
-
-    const ttlSeconds = calculateTtlSeconds(honk.expires_at)
-    if (ttlSeconds <= 0) {
-      return Response.json({
-        delivered: 0,
-        failed: 0,
-        skipped: true,
-        reason: 'Honk already expired.',
-      })
-    }
-
-    const firebaseConfig = readFirebaseConfig()
-    if (firebaseConfig == null) {
-      return Response.json({
-        delivered: 0,
-        failed: 0,
-        skipped: true,
-        reason:
-          'Missing Firebase configuration (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY).',
-      })
-    }
-
-    const accessToken = await getFirebaseAccessToken(firebaseConfig)
-    const title = 'New Honk'
-    const trimmedDetails = honk.details?.trim()
-    const body = trimmedDetails != null && trimmedDetails.length > 0
-      ? `${senderName} honked: Heading to ${honk.location}! ${trimmedDetails}`
-      : `${senderName} honked: Heading to ${honk.location}!`
-
-    const deliveryResult = await Promise.allSettled(
-      tokens.map((token) =>
-        sendFcmMessage({
-          accessToken,
-          projectId: firebaseConfig.projectId,
-          token,
-          title,
-          body,
-          ttlSeconds,
-          data: {
-            honk_id: honk.id,
-            user_id: honk.user_id,
-            location: honk.location,
-            status: honk.status,
-            details: honk.details ?? '',
-            created_at: honk.created_at,
-            expires_at: honk.expires_at,
-          },
-        }),
-      ),
-    )
-
-    const delivered = deliveryResult.filter((result) => result.status === 'fulfilled').length
-    const failed = deliveryResult.length - delivered
-
-    return Response.json({ delivered, failed })
+    return Response.json({ skipped: true, reason: 'Unsupported table.' })
   } catch (error) {
     console.error('honk-push function failed:', error)
     return Response.json(
@@ -201,6 +107,254 @@ Deno.serve(async (req) => {
     )
   }
 })
+
+async function handleActivityCreated(payload: WebhookPayload): Promise<Response> {
+  if (payload.type !== 'INSERT' || payload.record == null) {
+    return Response.json({ skipped: true, reason: 'Not an insert event.' })
+  }
+
+  const activity = payload.record as HonkActivityRecord
+  const creatorId = activity.creator_id
+  if (creatorId == null || creatorId.length === 0) {
+    return Response.json({ skipped: true, reason: 'Missing creator_id.' })
+  }
+
+  const participantIds = await fetchActiveParticipantIds({
+    activityId: activity.id,
+    excludeUserId: creatorId,
+  })
+  if (participantIds.length === 0) {
+    return Response.json({ delivered: 0, failed: 0, skipped: true })
+  }
+
+  const tokens = await fetchTokensForUsers(participantIds)
+  if (tokens.length === 0) {
+    return Response.json({ delivered: 0, failed: 0, skipped: true })
+  }
+
+  const creatorName = await fetchUsername(creatorId) ?? 'Your friend'
+
+  const firebaseConfig = readFirebaseConfig()
+  if (firebaseConfig == null) {
+    return Response.json({
+      delivered: 0,
+      failed: 0,
+      skipped: true,
+      reason:
+        'Missing Firebase configuration (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY).',
+    })
+  }
+
+  const accessToken = await getFirebaseAccessToken(firebaseConfig)
+  const title = 'New Activity Honk'
+  const details = activity.details?.trim()
+  const body = details != null && details.length > 0
+    ? `${creatorName} created "${activity.activity}" at ${activity.location}. ${details}`
+    : `${creatorName} created "${activity.activity}" at ${activity.location}.`
+
+  const deliveryResult = await Promise.allSettled(
+    tokens.map((token) =>
+      sendFcmMessage({
+        accessToken,
+        projectId: firebaseConfig.projectId,
+        token,
+        title,
+        body,
+        ttlSeconds: 3600,
+        data: {
+          event_type: 'activity_created',
+          activity_id: activity.id,
+          actor_user_id: creatorId,
+          activity: activity.activity,
+          location: activity.location,
+          occurrence_start: activity.starts_at,
+          status_key: '',
+        },
+      }),
+    ),
+  )
+
+  const delivered = deliveryResult.filter((result) => result.status === 'fulfilled').length
+  const failed = deliveryResult.length - delivered
+  return Response.json({ delivered, failed })
+}
+
+async function handleParticipantStatusUpdated(payload: WebhookPayload): Promise<Response> {
+  if ((payload.type !== 'INSERT' && payload.type !== 'UPDATE') || payload.record == null) {
+    return Response.json({ skipped: true, reason: 'Not a status update event.' })
+  }
+
+  const statusRecord = payload.record as HonkParticipantStatusRecord
+  const activityId = statusRecord.activity_id
+  const actorUserId = statusRecord.user_id
+  if (activityId == null || actorUserId == null) {
+    return Response.json({ skipped: true, reason: 'Missing activity/user in status event.' })
+  }
+
+  const participantIds = await fetchActiveParticipantIds({
+    activityId,
+    excludeUserId: actorUserId,
+  })
+  if (participantIds.length === 0) {
+    return Response.json({ delivered: 0, failed: 0, skipped: true })
+  }
+
+  const tokens = await fetchTokensForUsers(participantIds)
+  if (tokens.length === 0) {
+    return Response.json({ delivered: 0, failed: 0, skipped: true })
+  }
+
+  const [activity, actorName, statusLabel] = await Promise.all([
+    fetchActivityCore(activityId),
+    fetchUsername(actorUserId),
+    fetchStatusLabel(activityId, statusRecord.status_key),
+  ])
+
+  if (activity == null) {
+    return Response.json({ skipped: true, reason: 'Activity not found.' })
+  }
+
+  const firebaseConfig = readFirebaseConfig()
+  if (firebaseConfig == null) {
+    return Response.json({
+      delivered: 0,
+      failed: 0,
+      skipped: true,
+      reason:
+        'Missing Firebase configuration (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY).',
+    })
+  }
+
+  const accessToken = await getFirebaseAccessToken(firebaseConfig)
+  const resolvedActorName = actorName ?? 'A participant'
+  const resolvedStatusLabel = statusLabel ?? statusRecord.status_key
+  const title = 'Activity Status Honk'
+  const body = `${resolvedActorName} is now "${resolvedStatusLabel}" for "${activity.activity}".`
+
+  const ttlSeconds = calculateTtlSeconds(statusRecord.expires_at)
+  const safeTtlSeconds = ttlSeconds > 0 ? ttlSeconds : 3600
+
+  const deliveryResult = await Promise.allSettled(
+    tokens.map((token) =>
+      sendFcmMessage({
+        accessToken,
+        projectId: firebaseConfig.projectId,
+        token,
+        title,
+        body,
+        ttlSeconds: safeTtlSeconds,
+        data: {
+          event_type: 'status_updated',
+          activity_id: activity.id,
+          actor_user_id: actorUserId,
+          activity: activity.activity,
+          location: activity.location,
+          occurrence_start: statusRecord.occurrence_start,
+          status_key: statusRecord.status_key,
+        },
+      }),
+    ),
+  )
+
+  const delivered = deliveryResult.filter((result) => result.status === 'fulfilled').length
+  const failed = deliveryResult.length - delivered
+  return Response.json({ delivered, failed })
+}
+
+async function fetchActiveParticipantIds(args: {
+  activityId: string
+  excludeUserId?: string
+}): Promise<string[]> {
+  const result = await supabaseAdmin
+    .from('honk_activity_participants')
+    .select('user_id')
+    .eq('activity_id', args.activityId)
+    .is('left_at', null)
+    .returns<ParticipantRow[]>()
+
+  if (result.error != null) {
+    throw result.error
+  }
+
+  return Array.from(
+    new Set(
+      (result.data ?? [])
+        .map((row) => row.user_id)
+        .filter((userId) => userId.length > 0 && userId !== args.excludeUserId),
+    ),
+  )
+}
+
+async function fetchTokensForUsers(userIds: string[]): Promise<string[]> {
+  if (userIds.length === 0) {
+    return []
+  }
+
+  const result = await supabaseAdmin
+    .from('profiles')
+    .select('id, fcm_token')
+    .in('id', userIds)
+    .not('fcm_token', 'is', null)
+    .returns<ProfileWithTokenRow[]>()
+
+  if (result.error != null) {
+    throw result.error
+  }
+
+  return Array.from(
+    new Set(
+      (result.data ?? [])
+        .map((row) => row.fcm_token)
+        .filter((token): token is string => token != null && token.length > 0),
+    ),
+  )
+}
+
+async function fetchUsername(userId: string): Promise<string | null> {
+  const result = await supabaseAdmin
+    .from('profiles')
+    .select('username')
+    .eq('id', userId)
+    .maybeSingle<ProfileNameRow>()
+
+  if (result.error != null) {
+    throw result.error
+  }
+
+  return result.data?.username ?? null
+}
+
+async function fetchActivityCore(activityId: string): Promise<ActivityCoreRow | null> {
+  const result = await supabaseAdmin
+    .from('honk_activities')
+    .select('id, activity, location')
+    .eq('id', activityId)
+    .maybeSingle<ActivityCoreRow>()
+
+  if (result.error != null) {
+    throw result.error
+  }
+
+  return result.data ?? null
+}
+
+async function fetchStatusLabel(
+  activityId: string,
+  statusKey: string,
+): Promise<string | null> {
+  const result = await supabaseAdmin
+    .from('honk_activity_status_options')
+    .select('label')
+    .eq('activity_id', activityId)
+    .eq('status_key', statusKey)
+    .maybeSingle<StatusOptionRow>()
+
+  if (result.error != null) {
+    throw result.error
+  }
+
+  return result.data?.label ?? null
+}
 
 function getRequiredEnv(key: string): string {
   const value = Deno.env.get(key)

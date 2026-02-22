@@ -3,7 +3,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../../../core/domain/main_failure.dart';
-import '../../domain/entities/honk_event.dart';
+import '../../domain/entities/honk_activity.dart';
+import '../../domain/entities/honk_status_option.dart';
 import '../../domain/repositories/i_honk_repository.dart';
 
 part 'action_pad_state.dart';
@@ -15,30 +16,34 @@ class ActionPadCubit extends Cubit<ActionPadState> {
 
   final IHonkRepository _honkRepository;
 
-  Future<void> broadcastHonk({
-    required String userId,
+  Future<void> createActivity({
+    required String activity,
     required String location,
-    required String status,
     String? details,
-    Duration ttl = const Duration(minutes: 30),
+    required DateTime startsAt,
+    required String recurrenceTimezone,
+    String? recurrenceRrule,
+    required int statusResetSeconds,
+    required List<HonkStatusOption> statusOptions,
+    required List<String> participantIds,
   }) async {
     emit(const ActionPadState.submitting());
-
-    final now = DateTime.now().toUtc();
-    final honk = HonkEvent(
-      id: 'local-${now.microsecondsSinceEpoch}',
-      userId: userId,
-      location: location,
-      status: status,
-      details: details,
-      createdAt: now,
-      expiresAt: now.add(ttl),
-    );
-
-    final result = await _honkRepository.broadcastHonk(honk).run();
+    final result = await _honkRepository
+        .createActivity(
+          activity: activity,
+          location: location,
+          details: details,
+          startsAt: startsAt,
+          recurrenceRrule: recurrenceRrule,
+          recurrenceTimezone: recurrenceTimezone,
+          statusResetSeconds: statusResetSeconds,
+          statusOptions: statusOptions,
+          participantIds: participantIds,
+        )
+        .run();
     result.match(
       (failure) => emit(ActionPadState.failure(failure)),
-      (createdHonk) => emit(ActionPadState.success(createdHonk)),
+      (createdActivity) => emit(ActionPadState.success(createdActivity)),
     );
   }
 

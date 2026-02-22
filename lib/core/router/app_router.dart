@@ -15,6 +15,7 @@ import '../../features/honk/presentation/cubit/action_pad_cubit.dart';
 import '../../features/honk/domain/repositories/i_honk_repository.dart';
 import '../../features/honk/presentation/pages/home_dashboard_page.dart';
 import '../../features/honk/presentation/pages/honk_details_page.dart';
+import '../../features/honk/presentation/pages/invite_join_page.dart';
 import '../../features/notifications/presentation/cubit/notification_sync_cubit.dart';
 import '../../features/notifications/presentation/pages/settings_page.dart';
 import '../di/injection.dart';
@@ -40,16 +41,31 @@ class HomeRoute extends GoRouteData with $HomeRoute {
   }
 }
 
-@TypedGoRoute<HonkDetailsRoute>(path: '/honks/:honkId')
+@TypedGoRoute<HonkDetailsRoute>(path: '/activities/:activityId')
 class HonkDetailsRoute extends GoRouteData with $HonkDetailsRoute {
-  final String honkId;
+  final String activityId;
 
-  const HonkDetailsRoute({required this.honkId});
+  const HonkDetailsRoute({required this.activityId});
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
     return HonkDetailsPage(
-      honkId: honkId,
+      activityId: activityId,
+      honkRepository: getIt<IHonkRepository>(),
+    );
+  }
+}
+
+@TypedGoRoute<InviteJoinRoute>(path: '/join/:inviteCode')
+class InviteJoinRoute extends GoRouteData with $InviteJoinRoute {
+  const InviteJoinRoute({required this.inviteCode});
+
+  final String inviteCode;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return InviteJoinPage(
+      inviteCode: inviteCode,
       honkRepository: getIt<IHonkRepository>(),
     );
   }

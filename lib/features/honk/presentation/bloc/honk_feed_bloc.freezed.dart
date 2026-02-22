@@ -122,7 +122,7 @@ return honksUpdated(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  started,TResult Function( Either<MainFailure, List<HonkEvent>> result)?  honksUpdated,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  started,TResult Function( Either<MainFailure, List<HonkActivitySummary>> result)?  honksUpdated,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Started() when started != null:
 return started();case _HonksUpdated() when honksUpdated != null:
@@ -144,7 +144,7 @@ return honksUpdated(_that.result);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  started,required TResult Function( Either<MainFailure, List<HonkEvent>> result)  honksUpdated,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  started,required TResult Function( Either<MainFailure, List<HonkActivitySummary>> result)  honksUpdated,}) {final _that = this;
 switch (_that) {
 case _Started():
 return started();case _HonksUpdated():
@@ -165,7 +165,7 @@ return honksUpdated(_that.result);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  started,TResult? Function( Either<MainFailure, List<HonkEvent>> result)?  honksUpdated,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  started,TResult? Function( Either<MainFailure, List<HonkActivitySummary>> result)?  honksUpdated,}) {final _that = this;
 switch (_that) {
 case _Started() when started != null:
 return started();case _HonksUpdated() when honksUpdated != null:
@@ -216,7 +216,7 @@ class _HonksUpdated implements HonkFeedEvent {
   const _HonksUpdated(this.result);
   
 
- final  Either<MainFailure, List<HonkEvent>> result;
+ final  Either<MainFailure, List<HonkActivitySummary>> result;
 
 /// Create a copy of HonkFeedEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -248,7 +248,7 @@ abstract mixin class _$HonksUpdatedCopyWith<$Res> implements $HonkFeedEventCopyW
   factory _$HonksUpdatedCopyWith(_HonksUpdated value, $Res Function(_HonksUpdated) _then) = __$HonksUpdatedCopyWithImpl;
 @useResult
 $Res call({
- Either<MainFailure, List<HonkEvent>> result
+ Either<MainFailure, List<HonkActivitySummary>> result
 });
 
 
@@ -268,7 +268,7 @@ class __$HonksUpdatedCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? result = null,}) {
   return _then(_HonksUpdated(
 null == result ? _self.result : result // ignore: cast_nullable_to_non_nullable
-as Either<MainFailure, List<HonkEvent>>,
+as Either<MainFailure, List<HonkActivitySummary>>,
   ));
 }
 
@@ -392,7 +392,7 @@ return loadFailure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loadInProgress,TResult Function( List<HonkEvent> honks)?  loadSuccess,TResult Function( MainFailure failure)?  loadFailure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loadInProgress,TResult Function( List<HonkActivitySummary> honks)?  loadSuccess,TResult Function( MainFailure failure)?  loadFailure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Initial() when initial != null:
 return initial();case _LoadInProgress() when loadInProgress != null:
@@ -416,7 +416,7 @@ return loadFailure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loadInProgress,required TResult Function( List<HonkEvent> honks)  loadSuccess,required TResult Function( MainFailure failure)  loadFailure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loadInProgress,required TResult Function( List<HonkActivitySummary> honks)  loadSuccess,required TResult Function( MainFailure failure)  loadFailure,}) {final _that = this;
 switch (_that) {
 case _Initial():
 return initial();case _LoadInProgress():
@@ -439,7 +439,7 @@ return loadFailure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loadInProgress,TResult? Function( List<HonkEvent> honks)?  loadSuccess,TResult? Function( MainFailure failure)?  loadFailure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loadInProgress,TResult? Function( List<HonkActivitySummary> honks)?  loadSuccess,TResult? Function( MainFailure failure)?  loadFailure,}) {final _that = this;
 switch (_that) {
 case _Initial() when initial != null:
 return initial();case _LoadInProgress() when loadInProgress != null:
@@ -521,11 +521,11 @@ String toString() {
 
 
 class _LoadSuccess implements HonkFeedState {
-  const _LoadSuccess(final  List<HonkEvent> honks): _honks = honks;
+  const _LoadSuccess(final  List<HonkActivitySummary> honks): _honks = honks;
   
 
- final  List<HonkEvent> _honks;
- List<HonkEvent> get honks {
+ final  List<HonkActivitySummary> _honks;
+ List<HonkActivitySummary> get honks {
   if (_honks is EqualUnmodifiableListView) return _honks;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_honks);
@@ -562,7 +562,7 @@ abstract mixin class _$LoadSuccessCopyWith<$Res> implements $HonkFeedStateCopyWi
   factory _$LoadSuccessCopyWith(_LoadSuccess value, $Res Function(_LoadSuccess) _then) = __$LoadSuccessCopyWithImpl;
 @useResult
 $Res call({
- List<HonkEvent> honks
+ List<HonkActivitySummary> honks
 });
 
 
@@ -582,7 +582,7 @@ class __$LoadSuccessCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? honks = null,}) {
   return _then(_LoadSuccess(
 null == honks ? _self._honks : honks // ignore: cast_nullable_to_non_nullable
-as List<HonkEvent>,
+as List<HonkActivitySummary>,
   ));
 }
 

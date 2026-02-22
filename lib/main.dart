@@ -50,16 +50,31 @@ class _HonkAppState extends State<HonkApp> {
   late final DeepLinkHandler _deepLinkHandler;
   late final INotificationRepository _notificationRepository;
   late final INotificationRuntimeService _notificationRuntimeService;
-  StreamSubscription? _deepLinkSubscription;
+  StreamSubscription<Uri>? _deepLinkSubscription;
   StreamSubscription<AuthState>? _authStateSubscription;
   StreamSubscription<String>? _fcmTokenRefreshSubscription;
   StreamSubscription<String>? _notificationOpenSubscription;
-  String? _pendingOpenedHonkId;
+  String? _pendingOpenedActivityId;
+  String? _pendingInviteCode;
 
   Future<void> _handleInitialDeepLink() async {
-    final deepLink = await _deepLinkHandler.getInitialAuthDeepLink();
-    if (deepLink != null) {
-      _handleAuthDeepLink(deepLink);
+    final uri = await _deepLinkHandler.getInitialLink();
+    if (uri != null) {
+      _handleIncomingDeepLink(uri);
+    }
+  }
+
+  void _handleIncomingDeepLink(Uri uri) {
+    final authDeepLink = _deepLinkHandler.parseAuthDeepLink(uri);
+    if (authDeepLink.hasSessionTokens ||
+        authDeepLink.hasTokenHash ||
+        authDeepLink.hasError) {
+      _handleAuthDeepLink(authDeepLink);
+    }
+
+    final inviteCode = _deepLinkHandler.parseInviteCode(uri);
+    if (inviteCode != null && inviteCode.isNotEmpty) {
+      _handleInviteCode(inviteCode);
     }
   }
 
@@ -93,21 +108,39 @@ class _HonkAppState extends State<HonkApp> {
     }
   }
 
-  void _handleNotificationOpened(String honkId) {
-    if (honkId.isEmpty) {
+  void _handleNotificationOpened(String activityId) {
+    if (activityId.isEmpty) {
       return;
     }
 
     if (_authBloc.state is! Authenticated) {
-      _pendingOpenedHonkId = honkId;
+      _pendingOpenedActivityId = activityId;
       return;
     }
 
-    _navigateToOpenedHonk(honkId);
+    _navigateToOpenedActivity(activityId);
   }
 
-  void _navigateToOpenedHonk(String honkId) {
-    _router.go(HonkDetailsRoute(honkId: honkId).location);
+  void _handleInviteCode(String inviteCode) {
+    final normalizedInviteCode = inviteCode.trim();
+    if (normalizedInviteCode.isEmpty) {
+      return;
+    }
+
+    if (_authBloc.state is! Authenticated) {
+      _pendingInviteCode = normalizedInviteCode;
+      return;
+    }
+
+    _navigateToInviteJoin(normalizedInviteCode);
+  }
+
+  void _navigateToOpenedActivity(String activityId) {
+    _router.go(HonkDetailsRoute(activityId: activityId).location);
+  }
+
+  void _navigateToInviteJoin(String inviteCode) {
+    _router.go(InviteJoinRoute(inviteCode: inviteCode).location);
   }
 
   @override
@@ -119,7 +152,8 @@ class _HonkAppState extends State<HonkApp> {
     _notificationRepository = getIt<INotificationRepository>();
     _notificationRuntimeService = getIt<INotificationRuntimeService>();
 
-    _notificationOpenSubscription = _notificationRuntimeService.openedHonkIds
+    _notificationOpenSubscription = _notificationRuntimeService
+        .openedActivityIds
         .listen(_handleNotificationOpened);
     unawaited(_notificationRuntimeService.initialize());
 
@@ -128,8 +162,8 @@ class _HonkAppState extends State<HonkApp> {
 
     _handleInitialDeepLink();
 
-    _deepLinkSubscription = _deepLinkHandler.authDeepLinks.listen(
-      _handleAuthDeepLink,
+    _deepLinkSubscription = _deepLinkHandler.uriLinks.listen(
+      _handleIncomingDeepLink,
     );
 
     _authStateSubscription = _authBloc.stream.listen((state) {
@@ -137,10 +171,16 @@ class _HonkAppState extends State<HonkApp> {
         authenticated: (_) {
           _syncFcmTokenForCurrentUser();
 
-          final pendingHonkId = _pendingOpenedHonkId;
-          if (pendingHonkId != null && pendingHonkId.isNotEmpty) {
-            _pendingOpenedHonkId = null;
-            _navigateToOpenedHonk(pendingHonkId);
+          final pendingInviteCode = _pendingInviteCode;
+          if (pendingInviteCode != null && pendingInviteCode.isNotEmpty) {
+            _pendingInviteCode = null;
+            _navigateToInviteJoin(pendingInviteCode);
+          }
+
+          final pendingActivityId = _pendingOpenedActivityId;
+          if (pendingActivityId != null && pendingActivityId.isNotEmpty) {
+            _pendingOpenedActivityId = null;
+            _navigateToOpenedActivity(pendingActivityId);
           }
         },
       );

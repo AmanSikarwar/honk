@@ -9,6 +9,7 @@ part of 'app_router.dart';
 List<RouteBase> get $appRoutes => [
   $homeRoute,
   $honkDetailsRoute,
+  $inviteJoinRoute,
   $friendManagementRoute,
   $settingsRoute,
   $loginRoute,
@@ -42,19 +43,49 @@ mixin $HomeRoute on GoRouteData {
 }
 
 RouteBase get $honkDetailsRoute => GoRouteData.$route(
-  path: '/honks/:honkId',
+  path: '/activities/:activityId',
   factory: $HonkDetailsRoute._fromState,
 );
 
 mixin $HonkDetailsRoute on GoRouteData {
   static HonkDetailsRoute _fromState(GoRouterState state) =>
-      HonkDetailsRoute(honkId: state.pathParameters['honkId']!);
+      HonkDetailsRoute(activityId: state.pathParameters['activityId']!);
 
   HonkDetailsRoute get _self => this as HonkDetailsRoute;
 
   @override
+  String get location => GoRouteData.$location(
+    '/activities/${Uri.encodeComponent(_self.activityId)}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $inviteJoinRoute => GoRouteData.$route(
+  path: '/join/:inviteCode',
+  factory: $InviteJoinRoute._fromState,
+);
+
+mixin $InviteJoinRoute on GoRouteData {
+  static InviteJoinRoute _fromState(GoRouterState state) =>
+      InviteJoinRoute(inviteCode: state.pathParameters['inviteCode']!);
+
+  InviteJoinRoute get _self => this as InviteJoinRoute;
+
+  @override
   String get location =>
-      GoRouteData.$location('/honks/${Uri.encodeComponent(_self.honkId)}');
+      GoRouteData.$location('/join/${Uri.encodeComponent(_self.inviteCode)}');
 
   @override
   void go(BuildContext context) => context.go(location);

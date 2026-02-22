@@ -1,7 +1,7 @@
 import 'dart:async';
 
 abstract class INotificationRuntimeService {
-  Stream<String> get openedHonkIds;
+  Stream<String> get openedActivityIds;
 
   Future<void> initialize();
 

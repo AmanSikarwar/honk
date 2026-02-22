@@ -16,7 +16,7 @@ class NotificationRuntimeService implements INotificationRuntimeService {
 
   StreamSubscription<RemoteMessage>? _onMessageSubscription;
   StreamSubscription<RemoteMessage>? _onMessageOpenedAppSubscription;
-  final StreamController<String> _openedHonkIdsController =
+  final StreamController<String> _openedActivityIdsController =
       StreamController<String>.broadcast();
   bool _initialized = false;
 
@@ -28,7 +28,7 @@ class NotificationRuntimeService implements INotificationRuntimeService {
   );
 
   @override
-  Stream<String> get openedHonkIds => _openedHonkIdsController.stream;
+  Stream<String> get openedActivityIds => _openedActivityIdsController.stream;
 
   @override
   Future<void> initialize() async {
@@ -83,8 +83,10 @@ class NotificationRuntimeService implements INotificationRuntimeService {
       return;
     }
 
-    final honkId = message.data['honk_id'];
-    final payload = honkId is String && honkId.isNotEmpty ? honkId : null;
+    final activityId = _extractActivityId(message.data);
+    final payload = activityId != null && activityId.isNotEmpty
+        ? activityId
+        : null;
 
     try {
       final notificationDetails = NotificationDetails(
@@ -116,24 +118,37 @@ class NotificationRuntimeService implements INotificationRuntimeService {
   }
 
   void _handleMessageOpenedApp(RemoteMessage message) {
-    final honkId = message.data['honk_id'];
-    if (honkId is String && honkId.isNotEmpty) {
-      _emitOpenedHonkId(honkId);
+    final activityId = _extractActivityId(message.data);
+    if (activityId != null && activityId.isNotEmpty) {
+      _emitOpenedActivityId(activityId);
     }
   }
 
   void _handleLocalNotificationResponse(NotificationResponse response) {
-    final honkId = response.payload;
-    if (honkId != null && honkId.isNotEmpty) {
-      _emitOpenedHonkId(honkId);
+    final activityId = response.payload;
+    if (activityId != null && activityId.isNotEmpty) {
+      _emitOpenedActivityId(activityId);
     }
   }
 
-  void _emitOpenedHonkId(String honkId) {
-    if (_openedHonkIdsController.isClosed) {
+  String? _extractActivityId(Map<String, dynamic> data) {
+    final activityId = data['activity_id'];
+    if (activityId is String && activityId.isNotEmpty) {
+      return activityId;
+    }
+
+    final legacyHonkId = data['honk_id'];
+    if (legacyHonkId is String && legacyHonkId.isNotEmpty) {
+      return legacyHonkId;
+    }
+    return null;
+  }
+
+  void _emitOpenedActivityId(String activityId) {
+    if (_openedActivityIdsController.isClosed) {
       return;
     }
-    _openedHonkIdsController.add(honkId);
+    _openedActivityIdsController.add(activityId);
   }
 
   @override
@@ -142,7 +157,7 @@ class NotificationRuntimeService implements INotificationRuntimeService {
     await _onMessageOpenedAppSubscription?.cancel();
     _onMessageSubscription = null;
     _onMessageOpenedAppSubscription = null;
-    await _openedHonkIdsController.close();
+    await _openedActivityIdsController.close();
     _initialized = false;
   }
 }

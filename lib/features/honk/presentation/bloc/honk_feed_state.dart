@@ -6,7 +6,8 @@ class HonkFeedState with _$HonkFeedState {
 
   const factory HonkFeedState.loadInProgress() = _LoadInProgress;
 
-  const factory HonkFeedState.loadSuccess(List<HonkEvent> honks) = _LoadSuccess;
+  const factory HonkFeedState.loadSuccess(List<HonkActivitySummary> honks) =
+      _LoadSuccess;
 
   const factory HonkFeedState.loadFailure(MainFailure failure) = _LoadFailure;
 }

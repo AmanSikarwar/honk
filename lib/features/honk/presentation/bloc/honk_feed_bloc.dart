@@ -6,7 +6,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../../../core/domain/main_failure.dart';
-import '../../domain/entities/honk_event.dart';
+import '../../domain/entities/honk_activity_summary.dart';
 import '../../domain/repositories/i_honk_repository.dart';
 
 part 'honk_feed_bloc.freezed.dart';
@@ -21,14 +21,14 @@ class HonkFeedBloc extends Bloc<HonkFeedEvent, HonkFeedState> {
   }
 
   final IHonkRepository _honkRepository;
-  StreamSubscription<Either<MainFailure, List<HonkEvent>>>?
+  StreamSubscription<Either<MainFailure, List<HonkActivitySummary>>>?
   _honkFeedSubscription;
 
   Future<void> _onStarted(_Started event, Emitter<HonkFeedState> emit) async {
     emit(const HonkFeedState.loadInProgress());
 
     await _honkFeedSubscription?.cancel();
-    _honkFeedSubscription = _honkRepository.watchFriendsHonks().listen((
+    _honkFeedSubscription = _honkRepository.watchActivities().listen((
       result,
     ) {
       add(HonkFeedEvent.honksUpdated(result));

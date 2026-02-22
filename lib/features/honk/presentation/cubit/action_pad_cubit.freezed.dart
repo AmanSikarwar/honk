@@ -128,12 +128,12 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function()?  submitting,TResult Function( HonkEvent honk)?  success,TResult Function( MainFailure failure)?  failure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function()?  submitting,TResult Function( HonkActivity activity)?  success,TResult Function( MainFailure failure)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Idle() when idle != null:
 return idle();case _Submitting() when submitting != null:
 return submitting();case _Success() when success != null:
-return success(_that.honk);case _Failure() when failure != null:
+return success(_that.activity);case _Failure() when failure != null:
 return failure(_that.failure);case _:
   return orElse();
 
@@ -152,12 +152,12 @@ return failure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function()  submitting,required TResult Function( HonkEvent honk)  success,required TResult Function( MainFailure failure)  failure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function()  submitting,required TResult Function( HonkActivity activity)  success,required TResult Function( MainFailure failure)  failure,}) {final _that = this;
 switch (_that) {
 case _Idle():
 return idle();case _Submitting():
 return submitting();case _Success():
-return success(_that.honk);case _Failure():
+return success(_that.activity);case _Failure():
 return failure(_that.failure);case _:
   throw StateError('Unexpected subclass');
 
@@ -175,12 +175,12 @@ return failure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function()?  submitting,TResult? Function( HonkEvent honk)?  success,TResult? Function( MainFailure failure)?  failure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function()?  submitting,TResult? Function( HonkActivity activity)?  success,TResult? Function( MainFailure failure)?  failure,}) {final _that = this;
 switch (_that) {
 case _Idle() when idle != null:
 return idle();case _Submitting() when submitting != null:
 return submitting();case _Success() when success != null:
-return success(_that.honk);case _Failure() when failure != null:
+return success(_that.activity);case _Failure() when failure != null:
 return failure(_that.failure);case _:
   return null;
 
@@ -257,10 +257,10 @@ String toString() {
 
 
 class _Success implements ActionPadState {
-  const _Success(this.honk);
+  const _Success(this.activity);
   
 
- final  HonkEvent honk;
+ final  HonkActivity activity;
 
 /// Create a copy of ActionPadState
 /// with the given fields replaced by the non-null parameter values.
@@ -272,16 +272,16 @@ _$SuccessCopyWith<_Success> get copyWith => __$SuccessCopyWithImpl<_Success>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Success&&(identical(other.honk, honk) || other.honk == honk));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Success&&(identical(other.activity, activity) || other.activity == activity));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,honk);
+int get hashCode => Object.hash(runtimeType,activity);
 
 @override
 String toString() {
-  return 'ActionPadState.success(honk: $honk)';
+  return 'ActionPadState.success(activity: $activity)';
 }
 
 
@@ -292,11 +292,11 @@ abstract mixin class _$SuccessCopyWith<$Res> implements $ActionPadStateCopyWith<
   factory _$SuccessCopyWith(_Success value, $Res Function(_Success) _then) = __$SuccessCopyWithImpl;
 @useResult
 $Res call({
- HonkEvent honk
+ HonkActivity activity
 });
 
 
-$HonkEventCopyWith<$Res> get honk;
+
 
 }
 /// @nodoc
@@ -309,23 +309,14 @@ class __$SuccessCopyWithImpl<$Res>
 
 /// Create a copy of ActionPadState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? honk = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? activity = null,}) {
   return _then(_Success(
-null == honk ? _self.honk : honk // ignore: cast_nullable_to_non_nullable
-as HonkEvent,
+null == activity ? _self.activity : activity // ignore: cast_nullable_to_non_nullable
+as HonkActivity,
   ));
 }
 
-/// Create a copy of ActionPadState
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$HonkEventCopyWith<$Res> get honk {
-  
-  return $HonkEventCopyWith<$Res>(_self.honk, (value) {
-    return _then(_self.copyWith(honk: value));
-  });
-}
+
 }
 
 /// @nodoc

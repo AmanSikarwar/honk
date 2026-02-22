@@ -6,7 +6,7 @@ class ActionPadState with _$ActionPadState {
 
   const factory ActionPadState.submitting() = _Submitting;
 
-  const factory ActionPadState.success(HonkEvent honk) = _Success;
+  const factory ActionPadState.success(HonkActivity activity) = _Success;
 
   const factory ActionPadState.failure(MainFailure failure) = _Failure;
 }

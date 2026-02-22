@@ -58,22 +58,22 @@ class DeepLinkHandler {
 
   DeepLinkHandler() : _appLinks = AppLinks();
 
+  Stream<Uri> get uriLinks => _appLinks.uriLinkStream;
+
   Stream<AuthDeepLink> get authDeepLinks {
-    return _appLinks.uriLinkStream.map(_parseAuthDeepLink).where((link) {
+    return uriLinks.map(parseAuthDeepLink).where((link) {
       return link.hasSessionTokens || link.hasTokenHash || link.hasError;
     });
   }
 
-  Future<AuthDeepLink?> getInitialAuthDeepLink() async {
-    try {
-      final uri = await _appLinks.getInitialLink();
-      if (uri == null) return null;
+  Stream<String> get inviteCodes => uriLinks
+      .map(parseInviteCode)
+      .where((inviteCode) => inviteCode != null && inviteCode.isNotEmpty)
+      .cast<String>();
 
-      final link = _parseAuthDeepLink(uri);
-      if (link.hasSessionTokens || link.hasTokenHash || link.hasError) {
-        return link;
-      }
-      return null;
+  Future<Uri?> getInitialLink() async {
+    try {
+      return await _appLinks.getInitialLink();
     } catch (e) {
       developer.log(
         'Error getting initial deep link: $e',
@@ -83,7 +83,28 @@ class DeepLinkHandler {
     }
   }
 
-  AuthDeepLink _parseAuthDeepLink(Uri uri) {
+  Future<AuthDeepLink?> getInitialAuthDeepLink() async {
+    final uri = await getInitialLink();
+    if (uri == null) {
+      return null;
+    }
+
+    final link = parseAuthDeepLink(uri);
+    if (link.hasSessionTokens || link.hasTokenHash || link.hasError) {
+      return link;
+    }
+    return null;
+  }
+
+  Future<String?> getInitialInviteCode() async {
+    final uri = await getInitialLink();
+    if (uri == null) {
+      return null;
+    }
+    return parseInviteCode(uri);
+  }
+
+  AuthDeepLink parseAuthDeepLink(Uri uri) {
     developer.log('Parsing deep link: $uri', name: 'DeepLinkHandler');
 
     final params = <String, String>{};
@@ -106,5 +127,36 @@ class DeepLinkHandler {
       errorCode: params['error_code'],
       errorDescription: params['error_description'],
     );
+  }
+
+  String? parseInviteCode(Uri uri) {
+    final queryCode = uri.queryParameters['invite_code']?.trim();
+    if (queryCode != null && queryCode.isNotEmpty) {
+      return queryCode;
+    }
+
+    final code = uri.queryParameters['code']?.trim();
+    if (code != null && code.isNotEmpty) {
+      return code;
+    }
+
+    final host = uri.host.toLowerCase();
+    final segments = uri.pathSegments
+        .map((segment) => segment.trim())
+        .where((segment) => segment.isNotEmpty)
+        .toList(growable: false);
+
+    if (host == 'join') {
+      if (segments.isNotEmpty) {
+        return segments.first;
+      }
+      return null;
+    }
+
+    if (segments.length >= 2 && segments.first.toLowerCase() == 'join') {
+      return segments[1];
+    }
+
+    return null;
   }
 }

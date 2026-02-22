@@ -297,19 +297,32 @@ class _JoinByCodeSheetState extends State<_JoinByCodeSheet> {
                   loading: () => true,
                   orElse: () => false,
                 );
-                return SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: isLoading ? null : () => _join(context),
-                    icon: isLoading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.login_rounded),
-                    label: const Text('Join'),
-                  ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: isLoading ? null : () => _join(context),
+                      icon: isLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.login_rounded),
+                      label: const Text('Join'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              Navigator.of(context).pop();
+                              const QrScannerRoute().push(widget.parentContext);
+                            },
+                      icon: const Icon(Icons.qr_code_scanner),
+                      label: const Text('Scan QR code'),
+                    ),
+                  ],
                 );
               },
             ),

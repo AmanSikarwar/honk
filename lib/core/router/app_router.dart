@@ -18,6 +18,7 @@ import '../../features/honk/presentation/pages/create_honk_page.dart';
 import '../../features/honk/presentation/pages/honk_details_page.dart';
 import '../../features/honk/presentation/pages/honk_feed_page.dart';
 import '../../features/honk/presentation/pages/invite_join_page.dart';
+import '../../features/honk/presentation/pages/qr_scanner_page.dart';
 import '../../features/notifications/presentation/cubit/notification_sync_cubit.dart';
 import '../../features/notifications/presentation/pages/settings_page.dart';
 import '../di/injection.dart';
@@ -31,6 +32,7 @@ part 'app_router.g.dart';
     TypedGoRoute<HonkDetailsRoute>(path: 'activities/:activityId'),
     TypedGoRoute<FriendManagementRoute>(path: 'friends'),
     TypedGoRoute<SettingsRoute>(path: 'settings'),
+    TypedGoRoute<QrScannerRoute>(path: 'scan'),
   ],
 )
 class HomeRoute extends GoRouteData with $HomeRoute {
@@ -91,6 +93,18 @@ class SettingsRoute extends GoRouteData with $SettingsRoute {
     return BlocProvider(
       create: (_) => getIt<NotificationSyncCubit>(),
       child: const SettingsPage(),
+    );
+  }
+}
+
+class QrScannerRoute extends GoRouteData with $QrScannerRoute {
+  const QrScannerRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return BlocProvider(
+      create: (_) => getIt<JoinHonkCubit>(),
+      child: const QrScannerPage(),
     );
   }
 }

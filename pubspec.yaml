@@ -24,6 +24,8 @@ dependencies:
   google_sign_in: ^7.2.0
   injectable: ^2.7.1+4
   json_annotation: ^4.11.0
+  mobile_scanner: ^7.2.0
+  pretty_qr_code: ^3.6.0
   shared_preferences: ^2.5.4
   supabase_flutter: ^2.12.0
 

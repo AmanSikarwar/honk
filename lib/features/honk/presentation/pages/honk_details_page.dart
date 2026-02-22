@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pretty_qr_code/pretty_qr_code.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../domain/entities/honk_activity.dart';
@@ -230,21 +231,36 @@ class _DetailsScaffold extends StatelessWidget {
     final deepLink = 'https://honkapp.app/join/$code';
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       builder: (_) => Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              'Invite friends',
-              style: Theme.of(context).textTheme.titleLarge,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Invite friends',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: 200,
+              height: 200,
+              child: PrettyQrView.data(
+                data: deepLink,
+                decoration: const PrettyQrDecoration(
+                  shape: PrettyQrSmoothSymbol(),
+                  quietZone: PrettyQrQuietZone.standard,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             _CopyableRow(label: 'Code', value: code),
             const SizedBox(height: 8),
             _CopyableRow(label: 'Link', value: deepLink),
-            const SizedBox(height: 24),
           ],
         ),
       ),

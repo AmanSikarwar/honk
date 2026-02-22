@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:injectable/injectable.dart';
@@ -13,22 +15,29 @@ part 'friend_management_state.dart';
 class FriendManagementCubit extends Cubit<FriendManagementState> {
   FriendManagementCubit(this._friendRepository)
     : super(const FriendManagementState()) {
-    loadFriends();
+    _startWatching();
   }
 
   final IFriendRepository _friendRepository;
   int _searchRequestCounter = 0;
+  StreamSubscription<dynamic>? _friendsSub;
 
-  Future<void> loadFriends() async {
+  void _startWatching() {
+    _friendsSub?.cancel();
     emit(state.copyWith(isLoading: true, failure: null));
+    _friendsSub = _friendRepository.watchFriends().listen((result) {
+      result.match(
+        (failure) => emit(state.copyWith(isLoading: false, failure: failure)),
+        (friends) => emit(
+          state.copyWith(isLoading: false, friends: friends, failure: null),
+        ),
+      );
+    });
+  }
 
-    final result = await _friendRepository.fetchFriends().run();
-    result.match(
-      (failure) => emit(state.copyWith(isLoading: false, failure: failure)),
-      (friends) => emit(
-        state.copyWith(isLoading: false, friends: friends, failure: null),
-      ),
-    );
+  /// Manually triggers a fresh fetch and re-starts the realtime subscription.
+  Future<void> loadFriends() async {
+    _startWatching();
   }
 
   Future<void> searchUsers(String query) async {
@@ -59,26 +68,26 @@ class FriendManagementCubit extends Cubit<FriendManagementState> {
         .addFriend(friendId: friendId)
         .run();
 
-    await addResult.match(
-      (failure) async {
-        emit(state.copyWith(isLoading: false, failure: failure));
-      },
-      (_) async {
-        final friendsResult = await _friendRepository.fetchFriends().run();
-        friendsResult.match(
-          (failure) => emit(state.copyWith(isLoading: false, failure: failure)),
-          (friends) => emit(
-            state.copyWith(
-              isLoading: false,
-              friends: friends,
-              searchResults: state.searchResults
-                  .where((profile) => profile.id != friendId)
-                  .toList(growable: false),
-              failure: null,
-            ),
+    addResult.match(
+      (failure) => emit(state.copyWith(isLoading: false, failure: failure)),
+      (_) {
+        // Remove from search results immediately for snappy UX.
+        // The friends list itself updates automatically via the realtime stream.
+        emit(
+          state.copyWith(
+            isLoading: false,
+            searchResults: state.searchResults
+                .where((profile) => profile.id != friendId)
+                .toList(growable: false),
           ),
         );
       },
     );
+  }
+
+  @override
+  Future<void> close() async {
+    await _friendsSub?.cancel();
+    return super.close();
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -104,6 +106,59 @@ class FriendRepositoryImpl implements IFriendRepository {
 
       return friends;
     }, mapErrorToMainFailure);
+  }
+
+  @override
+  Stream<Either<MainFailure, List<Profile>>> watchFriends() {
+    final currentUserId = _supabase.auth.currentUser?.id;
+    if (currentUserId == null) {
+      return Stream.value(
+        left(
+          const MainFailure.authenticationFailure(
+            'User must be authenticated to watch friends.',
+          ),
+        ),
+      );
+    }
+
+    final controller = StreamController<Either<MainFailure, List<Profile>>>();
+    RealtimeChannel? channel;
+    var isFetching = false;
+
+    Future<void> emitSnapshot() async {
+      if (isFetching || controller.isClosed) return;
+      isFetching = true;
+      try {
+        final result = await fetchFriends().run();
+        if (!controller.isClosed) controller.add(result);
+      } catch (e, st) {
+        if (!controller.isClosed) {
+          controller.add(left(mapErrorToMainFailure(e, st)));
+        }
+      } finally {
+        isFetching = false;
+      }
+    }
+
+    unawaited(emitSnapshot());
+
+    channel = _supabase
+        .channel(
+          'friendships_${currentUserId}_${DateTime.now().millisecondsSinceEpoch}',
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'friendships',
+          callback: (_) => unawaited(emitSnapshot()),
+        )
+        .subscribe();
+
+    controller.onCancel = () async {
+      await channel?.unsubscribe();
+    };
+
+    return controller.stream;
   }
 
   String _requireCurrentUserId() {

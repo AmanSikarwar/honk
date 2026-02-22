@@ -176,7 +176,16 @@ async function handleActivityCreated(payload: WebhookPayload): Promise<Response>
 
   const delivered = deliveryResult.filter((result) => result.status === 'fulfilled').length
   const failed = deliveryResult.length - delivered
-  return Response.json({ delivered, failed })
+
+  const errors = deliveryResult
+    .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+    .map((r) => r.reason instanceof Error ? r.reason.message : String(r.reason))
+
+  if (errors.length > 0) {
+    console.error('FCM delivery failures (activity_created):', JSON.stringify(errors))
+  }
+
+  return Response.json({ delivered, failed, errors: errors.length > 0 ? errors : undefined })
 }
 
 async function handleParticipantStatusUpdated(payload: WebhookPayload): Promise<Response> {
@@ -258,7 +267,16 @@ async function handleParticipantStatusUpdated(payload: WebhookPayload): Promise<
 
   const delivered = deliveryResult.filter((result) => result.status === 'fulfilled').length
   const failed = deliveryResult.length - delivered
-  return Response.json({ delivered, failed })
+
+  const errors = deliveryResult
+    .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+    .map((r) => r.reason instanceof Error ? r.reason.message : String(r.reason))
+
+  if (errors.length > 0) {
+    console.error('FCM delivery failures (status_updated):', JSON.stringify(errors))
+  }
+
+  return Response.json({ delivered, failed, errors: errors.length > 0 ? errors : undefined })
 }
 
 async function fetchActiveParticipantIds(args: {
@@ -436,9 +454,9 @@ function readFirebaseConfig(): FirebaseConfig | null {
   }
 
   return {
-    projectId,
-    clientEmail,
-    privateKey: privateKeyRaw.replace(/\\n/g, '\n'),
+    projectId: projectId.trim(),
+    clientEmail: clientEmail.trim(),
+    privateKey: privateKeyRaw.trim().replace(/\\n/g, '\n'),
   }
 }
 

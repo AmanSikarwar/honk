@@ -9,6 +9,8 @@ abstract class HonkParticipant with _$HonkParticipant {
   const factory HonkParticipant({
     required String userId,
     required String username,
+    String? fullName,
+    String? profileUrl,
     required String role,
     required String effectiveStatusKey,
     DateTime? statusUpdatedAt,

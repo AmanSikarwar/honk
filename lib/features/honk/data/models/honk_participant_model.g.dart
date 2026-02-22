@@ -11,6 +11,8 @@ _HonkParticipantModel _$HonkParticipantModelFromJson(
 ) => _HonkParticipantModel(
   userId: json['user_id'] as String,
   username: json['username'] as String,
+  fullName: json['full_name'] as String?,
+  profileUrl: json['profile_url'] as String?,
   role: json['role'] as String,
   effectiveStatusKey: json['effective_status_key'] as String,
   statusUpdatedAt: json['status_updated_at'] == null
@@ -26,6 +28,8 @@ Map<String, dynamic> _$HonkParticipantModelToJson(
 ) => <String, dynamic>{
   'user_id': instance.userId,
   'username': instance.username,
+  'full_name': instance.fullName,
+  'profile_url': instance.profileUrl,
   'role': instance.role,
   'effective_status_key': instance.effectiveStatusKey,
   'status_updated_at': instance.statusUpdatedAt?.toIso8601String(),

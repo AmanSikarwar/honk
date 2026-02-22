@@ -395,21 +395,31 @@ class _ParticipantsList extends StatelessWidget {
             final timeLeft = expiresAt != null && !isExpired
                 ? expiresAt.difference(nowUtc)
                 : null;
+            final displayName = p.fullName ?? p.username;
+            final initials = displayName.isNotEmpty
+                ? displayName[0].toUpperCase()
+                : '?';
 
             return ListTile(
               leading: CircleAvatar(
                 backgroundColor: Theme.of(
                   context,
                 ).colorScheme.surfaceContainerHigh,
-                child: Text(
-                  p.username.isNotEmpty ? p.username[0].toUpperCase() : '?',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+                backgroundImage: p.profileUrl != null
+                    ? NetworkImage(p.profileUrl!)
+                    : null,
+                onBackgroundImageError: p.profileUrl != null ? (_, _) {} : null,
+                child: p.profileUrl == null
+                    ? Text(
+                        initials,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      )
+                    : null,
               ),
               title: Row(
                 children: [
                   Expanded(
-                    child: Text(p.username, overflow: TextOverflow.ellipsis),
+                    child: Text(displayName, overflow: TextOverflow.ellipsis),
                   ),
                   if (p.isCreator)
                     const Padding(

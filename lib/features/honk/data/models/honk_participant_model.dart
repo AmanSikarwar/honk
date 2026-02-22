@@ -15,6 +15,8 @@ abstract class HonkParticipantModel with _$HonkParticipantModel {
   const factory HonkParticipantModel({
     required String userId,
     required String username,
+    String? fullName,
+    String? profileUrl,
     required String role,
     required String effectiveStatusKey,
     DateTime? statusUpdatedAt,
@@ -24,6 +26,8 @@ abstract class HonkParticipantModel with _$HonkParticipantModel {
   HonkParticipant toDomain() => HonkParticipant(
     userId: userId,
     username: username,
+    fullName: fullName,
+    profileUrl: profileUrl,
     role: role,
     effectiveStatusKey: effectiveStatusKey,
     statusUpdatedAt: statusUpdatedAt?.toUtc(),

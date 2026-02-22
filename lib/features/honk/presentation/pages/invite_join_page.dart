@@ -1,92 +1,96 @@
 import 'package:flutter/material.dart';
-import 'package:fpdart/fpdart.dart' show Either;
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/domain/main_failure.dart';
 import '../../../../core/router/app_router.dart';
-import '../../domain/repositories/i_honk_repository.dart';
+import '../cubit/join_honk_cubit.dart';
 
 class InviteJoinPage extends StatefulWidget {
-  const InviteJoinPage({
-    required this.inviteCode,
-    required this.honkRepository,
-    super.key,
-  });
+  const InviteJoinPage({required this.inviteCode, super.key});
 
   final String inviteCode;
-  final IHonkRepository honkRepository;
 
   @override
   State<InviteJoinPage> createState() => _InviteJoinPageState();
 }
 
 class _InviteJoinPageState extends State<InviteJoinPage> {
-  late Future<Either<MainFailure, String>> _joinFuture;
   bool _didNavigate = false;
 
   @override
   void initState() {
     super.initState();
-    _joinFuture = _joinByInviteCode();
-  }
-
-  Future<Either<MainFailure, String>> _joinByInviteCode() {
-    return widget.honkRepository
-        .joinByInviteCode(inviteCode: widget.inviteCode)
-        .run();
-  }
-
-  void _retry() {
-    setState(() {
-      _didNavigate = false;
-      _joinFuture = _joinByInviteCode();
-    });
-  }
-
-  void _navigateToActivity(String activityId) {
-    if (_didNavigate || !mounted) {
-      return;
-    }
-    _didNavigate = true;
-    HonkDetailsRoute(activityId: activityId).go(context);
+    context.read<JoinHonkCubit>().joinByCode(widget.inviteCode);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Joining Activity')),
-      body: FutureBuilder<Either<MainFailure, String>>(
-        future: _joinFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const _CenteredMessage(
-              text: 'Joining activity...',
-              showLoader: true,
-            );
-          }
-
-          final result = snapshot.data;
-          if (result == null) {
-            return _JoinFailureView(
-              message: 'Unable to join this activity right now.',
-              onRetry: _retry,
-            );
-          }
-
-          return result.match(
-            (failure) =>
-                _JoinFailureView(message: failure.toString(), onRetry: _retry),
-            (activityId) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _navigateToActivity(activityId);
-              });
-
-              return const _CenteredMessage(
-                text: 'Activity joined. Redirecting...',
+    return BlocListener<JoinHonkCubit, JoinHonkState>(
+      listener: (context, state) {
+        state.mapOrNull(
+          success: (s) {
+            if (_didNavigate) return;
+            _didNavigate = true;
+            HonkDetailsRoute(activityId: s.activityId).go(context);
+          },
+        );
+      },
+      child: BlocBuilder<JoinHonkCubit, JoinHonkState>(
+        builder: (context, state) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Joining Honk')),
+            body: state.map(
+              idle: (_) =>
+                  const _CenteredMessage(text: 'Preparing…', showLoader: true),
+              loading: (_) => const _CenteredMessage(
+                text: 'Joining activity…',
                 showLoader: true,
-              );
-            },
+              ),
+              success: (_) => const _CenteredMessage(
+                text: 'Redirecting…',
+                showLoader: true,
+              ),
+              failure: (f) => _JoinFailureView(
+                message: f.failure.toString(),
+                onRetry: () {
+                  _didNavigate = false;
+                  context.read<JoinHonkCubit>().joinByCode(widget.inviteCode);
+                },
+              ),
+            ),
           );
         },
+      ),
+    );
+  }
+}
+
+// ── Internal widgets ──────────────────────────────────────────────────────────
+
+class _CenteredMessage extends StatelessWidget {
+  const _CenteredMessage({required this.text, this.showLoader = false});
+
+  final String text;
+  final bool showLoader;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showLoader) ...[
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+            ],
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -100,49 +104,30 @@ class _JoinFailureView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _CenteredMessage(
-      text: message,
-      actions: [
-        FilledButton.icon(
-          onPressed: onRetry,
-          icon: const Icon(Icons.refresh),
-          label: const Text('Retry Join'),
-        ),
-        const SizedBox(height: 8),
-        OutlinedButton(
-          onPressed: () => const HomeRoute().go(context),
-          child: const Text('Back to Dashboard'),
-        ),
-      ],
-    );
-  }
-}
-
-class _CenteredMessage extends StatelessWidget {
-  const _CenteredMessage({
-    required this.text,
-    this.showLoader = false,
-    this.actions = const <Widget>[],
-  });
-
-  final String text;
-  final bool showLoader;
-  final List<Widget> actions;
-
-  @override
-  Widget build(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (showLoader) ...[
-              const CircularProgressIndicator(),
-              const SizedBox(height: 12),
-            ],
-            Text(text, textAlign: TextAlign.center),
-            if (actions.isNotEmpty) ...[const SizedBox(height: 16), ...actions],
+            const Icon(Icons.error_outline, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try again'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: () => const HomeRoute().go(context),
+              child: const Text('Back to home'),
+            ),
           ],
         ),
       ),

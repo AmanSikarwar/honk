@@ -136,11 +136,6 @@ class NotificationRuntimeService implements INotificationRuntimeService {
     if (activityId is String && activityId.isNotEmpty) {
       return activityId;
     }
-
-    final legacyHonkId = data['honk_id'];
-    if (legacyHonkId is String && legacyHonkId.isNotEmpty) {
-      return legacyHonkId;
-    }
     return null;
   }
 

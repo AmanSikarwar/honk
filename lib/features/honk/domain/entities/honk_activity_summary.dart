@@ -1,27 +1,20 @@
-class HonkActivitySummary {
-  const HonkActivitySummary({
-    required this.id,
-    required this.activity,
-    required this.location,
-    required this.details,
-    required this.startsAt,
-    required this.recurrenceRrule,
-    required this.recurrenceTimezone,
-    required this.statusResetSeconds,
-    required this.defaultStatusKey,
-    required this.participantCount,
-    required this.isCreator,
-  });
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  final String id;
-  final String activity;
-  final String location;
-  final String? details;
-  final DateTime startsAt;
-  final String? recurrenceRrule;
-  final String recurrenceTimezone;
-  final int statusResetSeconds;
-  final String defaultStatusKey;
-  final int participantCount;
-  final bool isCreator;
+part 'honk_activity_summary.freezed.dart';
+
+@freezed
+abstract class HonkActivitySummary with _$HonkActivitySummary {
+  const factory HonkActivitySummary({
+    required String id,
+    required String activity,
+    required String location,
+    String? details,
+    required DateTime startsAt,
+    String? recurrenceRrule,
+    required String recurrenceTimezone,
+    required int statusResetSeconds,
+    required String defaultStatusKey,
+    required int participantCount,
+    required bool isCreator,
+  }) = _HonkActivitySummary;
 }

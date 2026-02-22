@@ -32,7 +32,10 @@ import '../../features/honk/data/repositories/honk_repository_impl.dart'
     as _i1038;
 import '../../features/honk/domain/repositories/i_honk_repository.dart' as _i31;
 import '../../features/honk/presentation/bloc/honk_feed_bloc.dart' as _i86;
-import '../../features/honk/presentation/cubit/action_pad_cubit.dart' as _i142;
+import '../../features/honk/presentation/cubit/create_honk_cubit.dart' as _i535;
+import '../../features/honk/presentation/cubit/honk_details_cubit.dart'
+    as _i351;
+import '../../features/honk/presentation/cubit/join_honk_cubit.dart' as _i473;
 import '../../features/notifications/data/repositories/notification_repository_impl.dart'
     as _i361;
 import '../../features/notifications/data/services/notification_runtime_service.dart'
@@ -68,9 +71,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i163.FlutterLocalNotificationsPlugin>(
       () => registerModule.flutterLocalNotificationsPlugin,
     );
-    gh.lazySingleton<_i31.IHonkRepository>(
-      () => _i1038.HonkRepositoryImpl(gh<_i454.SupabaseClient>()),
-    );
     gh.lazySingleton<_i129.IFriendRepository>(
       () => _i766.FriendRepositoryImpl(gh<_i454.SupabaseClient>()),
     );
@@ -92,11 +92,11 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i280.FriendManagementCubit>(
       () => _i280.FriendManagementCubit(gh<_i129.IFriendRepository>()),
     );
-    gh.factory<_i86.HonkFeedBloc>(
-      () => _i86.HonkFeedBloc(gh<_i31.IHonkRepository>()),
-    );
-    gh.factory<_i142.ActionPadCubit>(
-      () => _i142.ActionPadCubit(gh<_i31.IHonkRepository>()),
+    gh.lazySingleton<_i31.IHonkRepository>(
+      () => _i1038.HonkRepositoryImpl(
+        gh<_i454.SupabaseClient>(),
+        gh<_i129.IFriendRepository>(),
+      ),
     );
     gh.lazySingleton<_i787.AuthRepository>(
       () => _i153.AuthRepositoryImpl(
@@ -106,6 +106,18 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i797.AuthBloc>(
       () => _i797.AuthBloc(gh<_i787.AuthRepository>()),
+    );
+    gh.factory<_i86.HonkFeedBloc>(
+      () => _i86.HonkFeedBloc(gh<_i31.IHonkRepository>()),
+    );
+    gh.factory<_i535.CreateHonkCubit>(
+      () => _i535.CreateHonkCubit(gh<_i31.IHonkRepository>()),
+    );
+    gh.factory<_i351.HonkDetailsCubit>(
+      () => _i351.HonkDetailsCubit(gh<_i31.IHonkRepository>()),
+    );
+    gh.factory<_i473.JoinHonkCubit>(
+      () => _i473.JoinHonkCubit(gh<_i31.IHonkRepository>()),
     );
     return this;
   }

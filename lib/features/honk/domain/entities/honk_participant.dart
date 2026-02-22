@@ -1,19 +1,19 @@
-class HonkParticipant {
-  const HonkParticipant({
-    required this.userId,
-    required this.username,
-    required this.role,
-    required this.effectiveStatusKey,
-    required this.statusUpdatedAt,
-    required this.statusExpiresAt,
-  });
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  final String userId;
-  final String username;
-  final String role;
-  final String effectiveStatusKey;
-  final DateTime? statusUpdatedAt;
-  final DateTime? statusExpiresAt;
+part 'honk_participant.freezed.dart';
+
+@freezed
+abstract class HonkParticipant with _$HonkParticipant {
+  const HonkParticipant._();
+
+  const factory HonkParticipant({
+    required String userId,
+    required String username,
+    required String role,
+    required String effectiveStatusKey,
+    DateTime? statusUpdatedAt,
+    DateTime? statusExpiresAt,
+  }) = _HonkParticipant;
 
   bool get isCreator => role == 'creator';
 }

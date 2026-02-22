@@ -87,7 +87,7 @@ class FriendManagementPage extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: 'Settings',
-            onPressed: () => const SettingsRoute().go(context),
+            onPressed: () => const SettingsRoute().push(context),
             icon: const Icon(Icons.settings),
           ),
         ],

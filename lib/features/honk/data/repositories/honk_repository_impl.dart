@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/data/failure_mapper.dart';
 import '../../../../core/domain/main_failure.dart';
+import '../../../friends/domain/repositories/i_friend_repository.dart';
 import '../../domain/entities/honk_activity.dart';
 import '../../domain/entities/honk_activity_details.dart';
 import '../../domain/entities/honk_activity_summary.dart';
@@ -14,73 +15,37 @@ import '../../domain/entities/honk_participant_candidate.dart';
 import '../../domain/entities/honk_status_option.dart';
 import '../../domain/repositories/i_honk_repository.dart';
 import '../../domain/services/honk_recurrence_service.dart';
+import '../models/honk_activity_model.dart';
+import '../models/honk_participant_model.dart';
+import '../models/honk_status_option_model.dart';
 
 @LazySingleton(as: IHonkRepository)
 class HonkRepositoryImpl implements IHonkRepository {
-  HonkRepositoryImpl(this._supabase);
+  HonkRepositoryImpl(this._supabase, this._friendRepository);
 
   final SupabaseClient _supabase;
+  final IFriendRepository _friendRepository;
   final HonkRecurrenceService _recurrenceService =
       const HonkRecurrenceService();
-  static const _activityColumns =
-      'id, creator_id, activity, location, details, starts_at, recurrence_rrule, recurrence_timezone, status_reset_seconds, invite_code, created_at, updated_at';
+
   static const Duration _requestTimeout = Duration(seconds: 15);
-  static const Duration _activitiesPollInterval = Duration(seconds: 6);
-  static const Duration _activityDetailsPollInterval = Duration(seconds: 4);
+  static const _activityColumns =
+      'id, creator_id, activity, location, details, starts_at, recurrence_rrule, '
+      'recurrence_timezone, status_reset_seconds, invite_code, created_at, updated_at';
+
+  // ── Participants ─────────────────────────────────────────────────────────────
 
   @override
   TaskEither<MainFailure, List<HonkParticipantCandidate>>
   fetchEligibleParticipants() {
-    return TaskEither<MainFailure, List<HonkParticipantCandidate>>.tryCatch(
-      () async {
-        final currentUserId = _requireCurrentUserId();
-        final friendshipsResponse = await _supabase
-            .from('friendships')
-            .select('user_id, friend_id, status')
-            .eq('status', 'accepted');
-
-        final friendshipRows = List<Map<String, dynamic>>.from(
-          friendshipsResponse as List,
-        );
-        final friendIds = friendshipRows
-            .map((row) {
-              final userId = row['user_id'] as String?;
-              final friendId = row['friend_id'] as String?;
-              if (userId == null || friendId == null) {
-                return null;
-              }
-              return userId == currentUserId ? friendId : userId;
-            })
-            .whereType<String>()
-            .where((id) => id != currentUserId)
-            .toSet()
-            .toList(growable: false);
-
-        if (friendIds.isEmpty) {
-          return const <HonkParticipantCandidate>[];
-        }
-
-        final profilesResponse = await _supabase
-            .from('profiles')
-            .select('id, username')
-            .inFilter('id', friendIds);
-
-        final rows = List<Map<String, dynamic>>.from(profilesResponse as List);
-        final candidates =
-            rows
-                .map(
-                  (row) => HonkParticipantCandidate(
-                    id: row['id'] as String,
-                    username: row['username'] as String,
-                  ),
-                )
-                .toList(growable: false)
-              ..sort((a, b) => a.username.compareTo(b.username));
-        return candidates;
-      },
-      mapErrorToMainFailure,
+    return _friendRepository.fetchFriends().map(
+      (friends) => friends
+          .map((f) => HonkParticipantCandidate(id: f.id, username: f.username))
+          .toList(growable: false),
     );
   }
+
+  // ── Mutations ─────────────────────────────────────────────────────────────────
 
   @override
   TaskEither<MainFailure, HonkActivity> createActivity({
@@ -120,30 +85,25 @@ class HonkRepositoryImpl implements IHonkRepository {
           'Failed to create activity. Missing activity id.',
         );
       }
-
       final inviteCode = row['invite_code'] as String? ?? '';
+
       try {
         final created = await _withTimeout(_fetchActivityById(activityId));
-        if (created != null) {
-          return created;
-        }
+        if (created != null) return created;
       } catch (_) {
-        // Return a local representation so the create flow succeeds even when
-        // post-create reads fail due transient network/policy issues.
+        // Fall through.
       }
 
       final nowUtc = DateTime.now().toUtc();
-      final normalizedDetails = details?.trim();
-      final fallbackDetails =
-          (normalizedDetails == null || normalizedDetails.isEmpty)
-          ? null
-          : normalizedDetails;
+      final trimmedDetails = details?.trim();
       return HonkActivity(
         id: activityId,
         creatorId: currentUserId,
         activity: activity.trim(),
         location: location.trim(),
-        details: fallbackDetails,
+        details: (trimmedDetails == null || trimmedDetails.isEmpty)
+            ? null
+            : trimmedDetails,
         startsAt: startsAt.toUtc(),
         recurrenceRrule: recurrenceRrule?.trim().isEmpty == true
             ? null
@@ -197,7 +157,6 @@ class HonkRepositoryImpl implements IHonkRepository {
           'Updated activity could not be loaded.',
         );
       }
-
       return updated;
     }, mapErrorToMainFailure);
   }
@@ -295,6 +254,8 @@ class HonkRepositoryImpl implements IHonkRepository {
     }, mapErrorToMainFailure);
   }
 
+  // ── Realtime streams ──────────────────────────────────────────────────────────
+
   @override
   Stream<Either<MainFailure, List<HonkActivitySummary>>> watchActivities() {
     final currentUserId = _supabase.auth.currentUser?.id;
@@ -310,13 +271,11 @@ class HonkRepositoryImpl implements IHonkRepository {
 
     final controller =
         StreamController<Either<MainFailure, List<HonkActivitySummary>>>();
-
-    Timer? pollTimer;
+    RealtimeChannel? channel;
     var isFetching = false;
+
     Future<void> emitSnapshot() async {
-      if (isFetching) {
-        return;
-      }
+      if (isFetching || controller.isClosed) return;
       isFetching = true;
       try {
         final response = await _withTimeout(
@@ -330,12 +289,10 @@ class HonkRepositoryImpl implements IHonkRepository {
           currentUserId: currentUserId,
           rows: rows,
         );
+        if (!controller.isClosed) controller.add(right(summaries));
+      } catch (e, st) {
         if (!controller.isClosed) {
-          controller.add(right(summaries));
-        }
-      } catch (error, stackTrace) {
-        if (!controller.isClosed) {
-          controller.add(left(mapErrorToMainFailure(error, stackTrace)));
+          controller.add(left(mapErrorToMainFailure(e, st)));
         }
       } finally {
         isFetching = false;
@@ -343,12 +300,27 @@ class HonkRepositoryImpl implements IHonkRepository {
     }
 
     unawaited(emitSnapshot());
-    pollTimer = Timer.periodic(_activitiesPollInterval, (_) {
-      unawaited(emitSnapshot());
-    });
+
+    channel = _supabase
+        .channel(
+          'feed_${currentUserId}_${DateTime.now().millisecondsSinceEpoch}',
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'honk_activities',
+          callback: (_) => unawaited(emitSnapshot()),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'honk_activity_participants',
+          callback: (_) => unawaited(emitSnapshot()),
+        )
+        .subscribe();
 
     controller.onCancel = () async {
-      pollTimer?.cancel();
+      await channel?.unsubscribe();
     };
 
     return controller.stream;
@@ -371,13 +343,11 @@ class HonkRepositoryImpl implements IHonkRepository {
 
     final controller =
         StreamController<Either<MainFailure, HonkActivityDetails>>();
-    Timer? pollTimer;
+    RealtimeChannel? channel;
     var isFetching = false;
 
     Future<void> emitDetails() async {
-      if (isFetching) {
-        return;
-      }
+      if (isFetching || controller.isClosed) return;
       isFetching = true;
       try {
         final details = await _withTimeout(_fetchActivityDetails(activityId));
@@ -391,13 +361,10 @@ class HonkRepositoryImpl implements IHonkRepository {
           }
           return;
         }
-
+        if (!controller.isClosed) controller.add(right(details));
+      } catch (e, st) {
         if (!controller.isClosed) {
-          controller.add(right(details));
-        }
-      } catch (error, stackTrace) {
-        if (!controller.isClosed) {
-          controller.add(left(mapErrorToMainFailure(error, stackTrace)));
+          controller.add(left(mapErrorToMainFailure(e, st)));
         }
       } finally {
         isFetching = false;
@@ -405,27 +372,63 @@ class HonkRepositoryImpl implements IHonkRepository {
     }
 
     unawaited(emitDetails());
-    pollTimer = Timer.periodic(_activityDetailsPollInterval, (_) {
-      unawaited(emitDetails());
-    });
+
+    channel = _supabase
+        .channel(
+          'details_${activityId}_${DateTime.now().millisecondsSinceEpoch}',
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'honk_activities',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id',
+            value: activityId,
+          ),
+          callback: (_) => unawaited(emitDetails()),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'honk_activity_participants',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'activity_id',
+            value: activityId,
+          ),
+          callback: (_) => unawaited(emitDetails()),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'honk_participant_statuses',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'activity_id',
+            value: activityId,
+          ),
+          callback: (_) => unawaited(emitDetails()),
+        )
+        .subscribe();
 
     controller.onCancel = () async {
-      pollTimer?.cancel();
+      await channel?.unsubscribe();
     };
 
     return controller.stream;
   }
 
+  // ── Private helpers ───────────────────────────────────────────────────────────
+
   Future<List<HonkActivitySummary>> _toActivitySummaries({
     required String currentUserId,
     required List<Map<String, dynamic>> rows,
   }) async {
-    if (rows.isEmpty) {
-      return const <HonkActivitySummary>[];
-    }
+    if (rows.isEmpty) return const <HonkActivitySummary>[];
 
     final activityIds = rows
-        .map((row) => row['id'] as String?)
+        .map((r) => r['id'] as String?)
         .whereType<String>()
         .toList(growable: false);
 
@@ -438,7 +441,7 @@ class HonkRepositoryImpl implements IHonkRepository {
 
     final participantResponse = await _supabase
         .from('honk_activity_participants')
-        .select('activity_id, user_id, left_at')
+        .select('activity_id, user_id')
         .inFilter('activity_id', activityIds)
         .filter('left_at', 'is', null);
 
@@ -446,43 +449,36 @@ class HonkRepositoryImpl implements IHonkRepository {
     for (final row in List<Map<String, dynamic>>.from(
       optionsResponse as List,
     )) {
-      final activityId = row['activity_id'] as String?;
-      final statusKey = row['status_key'] as String?;
-      if (activityId != null && statusKey != null) {
-        defaultStatusByActivity[activityId] = statusKey;
-      }
+      final aId = row['activity_id'] as String?;
+      final sk = row['status_key'] as String?;
+      if (aId != null && sk != null) defaultStatusByActivity[aId] = sk;
     }
 
     final participantCountByActivity = <String, int>{};
     for (final row in List<Map<String, dynamic>>.from(
       participantResponse as List,
     )) {
-      final activityId = row['activity_id'] as String?;
-      if (activityId == null) {
-        continue;
-      }
-      participantCountByActivity.update(
-        activityId,
-        (value) => value + 1,
-        ifAbsent: () => 1,
-      );
+      final aId = row['activity_id'] as String?;
+      if (aId == null) continue;
+      participantCountByActivity.update(aId, (v) => v + 1, ifAbsent: () => 1);
     }
 
     return rows
         .map((row) {
-          final activityId = row['id'] as String;
+          final model = HonkActivityModel.fromJson(row);
+          final aId = model.id;
           return HonkActivitySummary(
-            id: activityId,
-            activity: row['activity'] as String? ?? '',
-            location: row['location'] as String? ?? '',
-            details: row['details'] as String?,
-            startsAt: _asDateTime(row['starts_at']),
-            recurrenceRrule: row['recurrence_rrule'] as String?,
-            recurrenceTimezone: row['recurrence_timezone'] as String? ?? 'UTC',
-            statusResetSeconds: row['status_reset_seconds'] as int? ?? 600,
-            defaultStatusKey: defaultStatusByActivity[activityId] ?? '',
-            participantCount: participantCountByActivity[activityId] ?? 0,
-            isCreator: (row['creator_id'] as String?) == currentUserId,
+            id: aId,
+            activity: model.activity,
+            location: model.location,
+            details: model.details,
+            startsAt: model.startsAt.toUtc(),
+            recurrenceRrule: model.recurrenceRrule,
+            recurrenceTimezone: model.recurrenceTimezone,
+            statusResetSeconds: model.statusResetSeconds,
+            defaultStatusKey: defaultStatusByActivity[aId] ?? '',
+            participantCount: participantCountByActivity[aId] ?? 0,
+            isCreator: model.creatorId == currentUserId,
           );
         })
         .toList(growable: false);
@@ -490,9 +486,7 @@ class HonkRepositoryImpl implements IHonkRepository {
 
   Future<HonkActivityDetails?> _fetchActivityDetails(String activityId) async {
     final activity = await _withTimeout(_fetchActivityById(activityId));
-    if (activity == null) {
-      return null;
-    }
+    if (activity == null) return null;
 
     final nowUtc = DateTime.now().toUtc();
     final occurrenceStart = _recurrenceService.resolveOccurrence(
@@ -510,16 +504,13 @@ class HonkRepositoryImpl implements IHonkRepository {
         },
       ),
     );
-
-    if (response == null) {
-      return null;
-    }
+    if (response == null) return null;
 
     final data = Map<String, dynamic>.from(response as Map);
     final options = _parseStatusOptions(data['status_options']);
     final participants = _parseParticipants(data['participants']);
-
     final currentUserId = _requireCurrentUserId();
+
     return HonkActivityDetails(
       activity: activity.copyWith(statusOptions: options),
       occurrenceStart: _asDateTime(data['occurrence_start']),
@@ -537,12 +528,8 @@ class HonkRepositoryImpl implements IHonkRepository {
           .eq('id', activityId)
           .maybeSingle(),
     );
+    if (response == null) return null;
 
-    if (response == null) {
-      return null;
-    }
-
-    final row = Map<String, dynamic>.from(response);
     final optionsResponse = await _withTimeout(
       _supabase
           .from('honk_activity_status_options')
@@ -554,66 +541,30 @@ class HonkRepositoryImpl implements IHonkRepository {
           .order('sort_order', ascending: true),
     );
     final options = _parseStatusOptions(optionsResponse);
-    return _toActivity(row, options);
-  }
-
-  HonkActivity _toActivity(
-    Map<String, dynamic> row,
-    List<HonkStatusOption> options,
-  ) {
-    return HonkActivity(
-      id: row['id'] as String,
-      creatorId: row['creator_id'] as String,
-      activity: row['activity'] as String? ?? '',
-      location: row['location'] as String? ?? '',
-      details: row['details'] as String?,
-      startsAt: _asDateTime(row['starts_at']),
-      recurrenceRrule: row['recurrence_rrule'] as String?,
-      recurrenceTimezone: row['recurrence_timezone'] as String? ?? 'UTC',
-      statusResetSeconds: row['status_reset_seconds'] as int? ?? 600,
-      inviteCode: row['invite_code'] as String? ?? '',
-      createdAt: _asDateTime(row['created_at']),
-      updatedAt: _asDateTime(row['updated_at']),
-      statusOptions: options,
-    );
+    return HonkActivityModel.fromJson(
+      Map<String, dynamic>.from(response),
+    ).toDomain().copyWith(statusOptions: options);
   }
 
   List<HonkStatusOption> _parseStatusOptions(dynamic raw) {
-    if (raw is! List) {
-      return const <HonkStatusOption>[];
-    }
-
+    if (raw is! List) return const <HonkStatusOption>[];
     return raw
-        .map((entry) => Map<String, dynamic>.from(entry as Map))
         .map(
-          (row) => HonkStatusOption(
-            statusKey: row['status_key'] as String? ?? '',
-            label: row['label'] as String? ?? '',
-            sortOrder: row['sort_order'] as int? ?? 0,
-            isDefault: row['is_default'] as bool? ?? false,
-            isActive: row['is_active'] as bool? ?? true,
-          ),
+          (e) => HonkStatusOptionModel.fromJson(
+            Map<String, dynamic>.from(e as Map),
+          ).toDomain(),
         )
         .toList(growable: false)
       ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
   }
 
   List<HonkParticipant> _parseParticipants(dynamic raw) {
-    if (raw is! List) {
-      return const <HonkParticipant>[];
-    }
-
+    if (raw is! List) return const <HonkParticipant>[];
     return raw
-        .map((entry) => Map<String, dynamic>.from(entry as Map))
         .map(
-          (row) => HonkParticipant(
-            userId: row['user_id'] as String? ?? '',
-            username: row['username'] as String? ?? '',
-            role: row['role'] as String? ?? 'participant',
-            effectiveStatusKey: row['effective_status_key'] as String? ?? '',
-            statusUpdatedAt: _asDateTimeOrNull(row['status_updated_at']),
-            statusExpiresAt: _asDateTimeOrNull(row['status_expires_at']),
-          ),
+          (e) => HonkParticipantModel.fromJson(
+            Map<String, dynamic>.from(e as Map),
+          ).toDomain(),
         )
         .toList(growable: false);
   }
@@ -623,44 +574,32 @@ class HonkRepositoryImpl implements IHonkRepository {
   ) {
     return options
         .map(
-          (option) => {
-            'status_key': option.statusKey.trim(),
-            'label': option.label.trim(),
-            'sort_order': option.sortOrder,
-            'is_default': option.isDefault,
+          (o) => {
+            'status_key': o.statusKey.trim(),
+            'label': o.label.trim(),
+            'sort_order': o.sortOrder,
+            'is_default': o.isDefault,
           },
         )
         .toList(growable: false);
   }
 
   DateTime _asDateTime(dynamic value) {
-    if (value is DateTime) {
-      return value.toUtc();
-    }
-    if (value is String) {
-      return DateTime.parse(value).toUtc();
-    }
+    if (value is DateTime) return value.toUtc();
+    if (value is String) return DateTime.parse(value).toUtc();
     throw const MainFailure.databaseFailure('Invalid datetime value.');
   }
 
-  DateTime? _asDateTimeOrNull(dynamic value) {
-    if (value == null) {
-      return null;
-    }
-    return _asDateTime(value);
-  }
-
   String _requireCurrentUserId() {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) {
+    final id = _supabase.auth.currentUser?.id;
+    if (id == null) {
       throw const MainFailure.authenticationFailure(
         'User must be authenticated for activity operations.',
       );
     }
-    return userId;
+    return id;
   }
 
-  Future<T> _withTimeout<T>(Future<T> future) {
-    return future.timeout(_requestTimeout);
-  }
+  Future<T> _withTimeout<T>(Future<T> future) =>
+      future.timeout(_requestTimeout);
 }

@@ -2,53 +2,33 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:fpdart/fpdart.dart' show Either;
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/deep_link/deep_link_handler.dart';
-import '../../../../core/domain/main_failure.dart';
 import '../../../../core/router/app_router.dart';
 import '../../domain/entities/honk_activity.dart';
 import '../../domain/entities/honk_activity_details.dart';
+import '../../domain/entities/honk_participant.dart';
 import '../../domain/entities/honk_status_option.dart';
-import '../../domain/repositories/i_honk_repository.dart';
+import '../cubit/honk_details_cubit.dart';
 
 class HonkDetailsPage extends StatefulWidget {
-  const HonkDetailsPage({
-    required this.activityId,
-    required this.honkRepository,
-    super.key,
-  });
+  const HonkDetailsPage({required this.activityId, super.key});
 
   final String activityId;
-  final IHonkRepository honkRepository;
 
   @override
   State<HonkDetailsPage> createState() => _HonkDetailsPageState();
 }
 
 class _HonkDetailsPageState extends State<HonkDetailsPage> {
-  late Stream<Either<MainFailure, HonkActivityDetails>> _detailsStream;
   Timer? _ticker;
   DateTime _nowUtc = DateTime.now().toUtc();
-  String? _statusSubmittingKey;
-  bool _isDeleting = false;
-  bool _isLeaving = false;
-  bool _isRotatingInvite = false;
-  bool _isUpdatingActivity = false;
 
   @override
   void initState() {
     super.initState();
-    _detailsStream = widget.honkRepository.watchActivityDetails(
-      activityId: widget.activityId,
-    );
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _nowUtc = DateTime.now().toUtc();
-      });
+      if (mounted) setState(() => _nowUtc = DateTime.now().toUtc());
     });
   }
 
@@ -58,488 +38,570 @@ class _HonkDetailsPageState extends State<HonkDetailsPage> {
     super.dispose();
   }
 
-  void _retry() {
-    setState(() {
-      _detailsStream = widget.honkRepository.watchActivityDetails(
-        activityId: widget.activityId,
-      );
-    });
-  }
-
-  void _showMessage(String message) {
-    if (!mounted) {
-      return;
-    }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  Future<bool> _confirm({
-    required String title,
-    required String message,
-    required String confirmLabel,
-  }) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(confirmLabel),
-            ),
-          ],
-        );
-      },
-    );
-
-    return result == true;
-  }
-
-  Future<void> _deleteActivity(String activityId) async {
-    final shouldDelete = await _confirm(
-      title: 'Delete Activity?',
-      message: 'This removes the activity for all participants.',
-      confirmLabel: 'Delete',
-    );
-    if (!shouldDelete || !mounted) {
-      return;
-    }
-
-    setState(() {
-      _isDeleting = true;
-    });
-
-    final result = await widget.honkRepository
-        .deleteActivity(activityId: activityId)
-        .run();
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isDeleting = false;
-    });
-
-    result.match((failure) => _showMessage(failure.toString()), (_) {
-      _showMessage('Activity deleted.');
-      const HomeRoute().go(context);
-    });
-  }
-
-  Future<void> _leaveActivity(String activityId) async {
-    final shouldLeave = await _confirm(
-      title: 'Leave Activity?',
-      message: 'You can rejoin later using the invite code.',
-      confirmLabel: 'Leave',
-    );
-    if (!shouldLeave || !mounted) {
-      return;
-    }
-
-    setState(() {
-      _isLeaving = true;
-    });
-
-    final result = await widget.honkRepository
-        .leaveActivity(activityId: activityId)
-        .run();
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isLeaving = false;
-    });
-
-    result.match((failure) => _showMessage(failure.toString()), (_) {
-      _showMessage('You left the activity.');
-      const HomeRoute().go(context);
-    });
-  }
-
-  Future<void> _rotateInvite(String activityId) async {
-    setState(() {
-      _isRotatingInvite = true;
-    });
-
-    final result = await widget.honkRepository
-        .rotateInvite(activityId: activityId)
-        .run();
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isRotatingInvite = false;
-    });
-
-    result.match((failure) => _showMessage(failure.toString()), (inviteCode) {
-      _showMessage('Invite rotated. New code: $inviteCode');
-    });
-  }
-
-  Future<void> _setStatus({
-    required String activityId,
-    required DateTime occurrenceStart,
-    required String statusKey,
-  }) async {
-    setState(() {
-      _statusSubmittingKey = statusKey;
-    });
-
-    final result = await widget.honkRepository
-        .setParticipantStatus(
-          activityId: activityId,
-          occurrenceStart: occurrenceStart,
-          statusKey: statusKey,
-        )
-        .run();
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _statusSubmittingKey = null;
-    });
-
-    result.match(
-      (failure) => _showMessage(failure.toString()),
-      (_) => _showMessage('Status updated.'),
-    );
-  }
-
-  Future<void> _editActivity(HonkActivityDetails details) async {
-    final input = await showDialog<_EditActivityInput>(
-      context: context,
-      builder: (dialogContext) => _EditActivityDialog(
-        activity: details.activity,
-        statusOptions: details.statusOptions,
-      ),
-    );
-    if (input == null || !mounted) {
-      return;
-    }
-
-    setState(() {
-      _isUpdatingActivity = true;
-    });
-
-    final result = await widget.honkRepository
-        .updateActivity(
-          activityId: details.activity.id,
-          activity: input.activity,
-          location: input.location,
-          details: input.details,
-          startsAt: input.startsAtUtc,
-          recurrenceRrule: input.recurrenceRrule,
-          recurrenceTimezone: details.activity.recurrenceTimezone,
-          statusResetSeconds: input.statusResetSeconds,
-          statusOptions: input.statusOptions,
-        )
-        .run();
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isUpdatingActivity = false;
-    });
-
-    result.match(
-      (failure) => _showMessage(failure.toString()),
-      (_) => _showMessage('Activity updated.'),
-    );
-  }
-
-  Future<void> _shareInvite(HonkActivity activity) async {
-    final inviteCode = activity.inviteCode.trim();
-    final inviteLink = '${DeepLinkConfig.scheme}://join?code=$inviteCode';
-
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Share Invite',
-                  style: Theme.of(sheetContext).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                SelectableText('Code: $inviteCode'),
-                const SizedBox(height: 4),
-                SelectableText('Link: $inviteLink'),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilledButton.icon(
-                      onPressed: () async {
-                        await Clipboard.setData(
-                          ClipboardData(text: inviteCode),
-                        );
-                        if (sheetContext.mounted) {
-                          Navigator.of(sheetContext).pop();
-                        }
-                        _showMessage('Invite code copied.');
-                      },
-                      icon: const Icon(Icons.key_outlined),
-                      label: const Text('Copy Code'),
-                    ),
-                    FilledButton.tonalIcon(
-                      onPressed: () async {
-                        await Clipboard.setData(
-                          ClipboardData(text: inviteLink),
-                        );
-                        if (sheetContext.mounted) {
-                          Navigator.of(sheetContext).pop();
-                        }
-                        _showMessage('Invite link copied.');
-                      },
-                      icon: const Icon(Icons.link),
-                      label: const Text('Copy Link'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Activity Details')),
-      body: StreamBuilder<Either<MainFailure, HonkActivityDetails>>(
-        stream: _detailsStream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final result = snapshot.data;
-          if (result == null) {
-            return _ErrorView(
-              message: 'Unable to load this activity right now.',
-              onRetry: _retry,
+    return BlocListener<HonkDetailsCubit, HonkDetailsState>(
+      listener: (context, state) {
+        if (state.wasDeleted || state.wasLeft) {
+          const HomeRoute().go(context);
+          return;
+        }
+        if (state.actionError != null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.actionError.toString())));
+          context.read<HonkDetailsCubit>().clearActionError();
+        }
+        if (state.rotatedInviteCode != null) {
+          _showInviteCodeDialog(
+            context,
+            code: state.rotatedInviteCode!,
+            details: state.details,
+          );
+          context.read<HonkDetailsCubit>().clearRotatedInviteCode();
+        }
+      },
+      child: BlocBuilder<HonkDetailsCubit, HonkDetailsState>(
+        builder: (context, state) {
+          if (state.isLoading && state.details == null) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Loading…')),
+              body: const Center(child: CircularProgressIndicator()),
             );
           }
 
-          return result.match(
-            (failure) =>
-                _ErrorView(message: failure.toString(), onRetry: _retry),
-            (details) => _ActivityDetailsView(
-              details: details,
-              nowUtc: _nowUtc,
-              statusSubmittingKey: _statusSubmittingKey,
-              isDeleting: _isDeleting,
-              isLeaving: _isLeaving,
-              isRotatingInvite: _isRotatingInvite,
-              isUpdatingActivity: _isUpdatingActivity,
-              onRefresh: _retry,
-              onShareInvite: () => _shareInvite(details.activity),
-              onRotateInvite: details.isCreator
-                  ? () => _rotateInvite(details.activity.id)
-                  : null,
-              onEditActivity: details.isCreator
-                  ? () => _editActivity(details)
-                  : null,
-              onDeleteActivity: details.isCreator
-                  ? () => _deleteActivity(details.activity.id)
-                  : null,
-              onLeaveActivity: details.isCreator
-                  ? null
-                  : () => _leaveActivity(details.activity.id),
-              onSetStatus: (statusKey) => _setStatus(
-                activityId: details.activity.id,
-                occurrenceStart: details.occurrenceStart,
-                statusKey: statusKey,
+          if (state.loadFailure != null && state.details == null) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Error')),
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(state.loadFailure.toString()),
+                      const SizedBox(height: 16),
+                      FilledButton.icon(
+                        onPressed: () => context.read<HonkDetailsCubit>().watch(
+                          widget.activityId,
+                        ),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            );
+          }
+
+          final details = state.details;
+          if (details == null) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Honk')),
+              body: const Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          return _DetailsScaffold(
+            details: details,
+            state: state,
+            nowUtc: _nowUtc,
+            activityId: widget.activityId,
           );
         },
       ),
     );
   }
+
+  void _showInviteCodeDialog(
+    BuildContext context, {
+    required String code,
+    required HonkActivityDetails? details,
+  }) {
+    final deepLink = 'https://honkapp.app/join/$code';
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('New Invite Code'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Share this code or link with friends:'),
+            const SizedBox(height: 12),
+            _CopyableRow(label: 'Code', value: code),
+            const SizedBox(height: 8),
+            _CopyableRow(label: 'Link', value: deepLink),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _ActivityDetailsView extends StatelessWidget {
-  const _ActivityDetailsView({
+// ── Main scaffold ─────────────────────────────────────────────────────────────
+
+class _DetailsScaffold extends StatelessWidget {
+  const _DetailsScaffold({
     required this.details,
+    required this.state,
     required this.nowUtc,
-    required this.statusSubmittingKey,
-    required this.isDeleting,
-    required this.isLeaving,
-    required this.isRotatingInvite,
-    required this.isUpdatingActivity,
-    required this.onRefresh,
-    required this.onShareInvite,
-    required this.onRotateInvite,
-    required this.onEditActivity,
-    required this.onDeleteActivity,
-    required this.onLeaveActivity,
-    required this.onSetStatus,
+    required this.activityId,
   });
 
   final HonkActivityDetails details;
+  final HonkDetailsState state;
   final DateTime nowUtc;
-  final String? statusSubmittingKey;
-  final bool isDeleting;
-  final bool isLeaving;
-  final bool isRotatingInvite;
-  final bool isUpdatingActivity;
-  final VoidCallback onRefresh;
-  final VoidCallback onShareInvite;
-  final VoidCallback? onRotateInvite;
-  final VoidCallback? onEditActivity;
-  final VoidCallback? onDeleteActivity;
-  final VoidCallback? onLeaveActivity;
-  final ValueChanged<String> onSetStatus;
+  final String activityId;
 
   @override
   Widget build(BuildContext context) {
     final activity = details.activity;
-    final statusOptions = details.statusOptions.isNotEmpty
-        ? details.statusOptions
-        : const [
-            HonkStatusOption(
-              statusKey: 'default',
-              label: 'Default',
-              sortOrder: 0,
-              isDefault: true,
-              isActive: true,
+    final isCreator = details.isCreator;
+    final me = details.currentUserParticipant;
+    final cubit = context.read<HonkDetailsCubit>();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(activity.activity, overflow: TextOverflow.ellipsis),
+        actions: [
+          if (isCreator) ...[
+            IconButton(
+              tooltip: 'Share invite',
+              icon: const Icon(Icons.share_outlined),
+              onPressed: () => _showShareSheet(context, activity),
             ),
-          ];
-    final defaultStatus = statusOptions.firstWhere(
-      (option) => option.isDefault,
-      orElse: () => statusOptions.first,
-    );
-    final statusLabelByKey = <String, String>{
-      for (final option in statusOptions) option.statusKey: option.label,
-    };
-
-    final sortedParticipants = [...details.participants]
-      ..sort((a, b) {
-        if (a.isCreator && !b.isCreator) {
-          return -1;
-        }
-        if (!a.isCreator && b.isCreator) {
-          return 1;
-        }
-        return a.username.compareTo(b.username);
-      });
-
-    return RefreshIndicator(
-      onRefresh: () async => onRefresh(),
-      child: ListView(
+            IconButton(
+              tooltip: 'Edit honk',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: state.isUpdating
+                  ? null
+                  : () => _showEditDialog(context, details),
+            ),
+            IconButton(
+              tooltip: 'Rotate invite',
+              icon: const Icon(Icons.refresh),
+              onPressed: state.isRotatingInvite
+                  ? null
+                  : () => cubit.rotateInvite(activityId),
+            ),
+          ],
+        ],
+      ),
+      body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    activity.activity,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    activity.location,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  _DetailRow(
-                    label: 'Starts',
-                    value: _formatDateTime(activity.startsAt),
-                  ),
-                  _DetailRow(
-                    label: 'Occurrence',
-                    value: _formatDateTime(details.occurrenceStart),
-                  ),
-                  _DetailRow(
-                    label: 'Recurrence',
-                    value: _formatRecurrence(activity.recurrenceRrule),
-                  ),
-                  _DetailRow(
-                    label: 'Reset TTL',
-                    value: _formatDurationLabel(activity.statusResetSeconds),
-                  ),
-                  _DetailRow(label: 'Invite', value: activity.inviteCode),
-                  if (activity.details != null && activity.details!.isNotEmpty)
-                    _DetailRow(label: 'Details', value: activity.details!),
-                ],
-              ),
+          _ActivityInfoCard(activity: activity),
+          const SizedBox(height: 16),
+          _ParticipantsList(
+            participants: details.participants,
+            statusOptions: details.statusOptions,
+            nowUtc: nowUtc,
+            statusResetSeconds: activity.statusResetSeconds,
+          ),
+          const SizedBox(height: 80),
+        ],
+      ),
+      floatingActionButton: _HonkFab(
+        details: details,
+        state: state,
+        activityId: activityId,
+        isCreator: isCreator,
+        currentParticipant: me,
+        nowUtc: nowUtc,
+      ),
+      bottomNavigationBar: _BottomActions(
+        activityId: activityId,
+        isCreator: isCreator,
+        state: state,
+      ),
+    );
+  }
+
+  void _showShareSheet(BuildContext context, HonkActivity activity) {
+    final code = activity.inviteCode;
+    final deepLink = 'https://honkapp.app/join/$code';
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Invite friends',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            _CopyableRow(label: 'Code', value: code),
+            const SizedBox(height: 8),
+            _CopyableRow(label: 'Link', value: deepLink),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context, HonkActivityDetails details) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => BlocProvider.value(
+        value: context.read<HonkDetailsCubit>(),
+        child: _EditHonkDialog(details: details, activityId: activityId),
+      ),
+    );
+  }
+}
+
+// ── Activity info card ────────────────────────────────────────────────────────
+
+class _ActivityInfoCard extends StatelessWidget {
+  const _ActivityInfoCard({required this.activity});
+
+  final HonkActivity activity;
+
+  @override
+  Widget build(BuildContext context) {
+    final schedule = activity.recurrenceRrule != null
+        ? '${_parseRecurrence(activity.recurrenceRrule!)} starting ${_fmtLocal(activity.startsAt)}'
+        : 'One-time on ${_fmtLocal(activity.startsAt)}';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _InfoRow(icon: Icons.place_outlined, text: activity.location),
+            const SizedBox(height: 8),
+            _InfoRow(icon: Icons.schedule, text: schedule),
+            if (activity.details != null && activity.details!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _InfoRow(icon: Icons.info_outline, text: activity.details!),
+            ],
+            const SizedBox(height: 8),
+            _InfoRow(
+              icon: Icons.timer_outlined,
+              text:
+                  'Status resets after ${_formatReset(activity.statusResetSeconds)}',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _fmtLocal(DateTime utc) {
+    final l = utc.toLocal();
+    final m = l.month.toString().padLeft(2, '0');
+    final d = l.day.toString().padLeft(2, '0');
+    final h = l.hour.toString().padLeft(2, '0');
+    final min = l.minute.toString().padLeft(2, '0');
+    return '${l.year}-$m-$d $h:$min';
+  }
+
+  String _parseRecurrence(String rrule) {
+    if (rrule.startsWith('FREQ=DAILY')) return 'Daily';
+    if (rrule.startsWith('FREQ=WEEKLY')) return 'Weekly';
+    return rrule;
+  }
+
+  String _formatReset(int seconds) {
+    if (seconds < 60) return '${seconds}s';
+    if (seconds < 3600) return '${seconds ~/ 60}m';
+    return '${seconds ~/ 3600}h';
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: Theme.of(context).colorScheme.outline),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text)),
+      ],
+    );
+  }
+}
+
+// ── Participants list ─────────────────────────────────────────────────────────
+
+class _ParticipantsList extends StatelessWidget {
+  const _ParticipantsList({
+    required this.participants,
+    required this.statusOptions,
+    required this.nowUtc,
+    required this.statusResetSeconds,
+  });
+
+  final List<HonkParticipant> participants;
+  final List<HonkStatusOption> statusOptions;
+  final DateTime nowUtc;
+  final int statusResetSeconds;
+
+  @override
+  Widget build(BuildContext context) {
+    final labelsByKey = {for (final o in statusOptions) o.statusKey: o.label};
+
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Members',
+              style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              FilledButton.tonalIcon(
-                onPressed: onShareInvite,
-                icon: const Icon(Icons.share_outlined),
-                label: const Text('Share Invite'),
+          ...participants.map((p) {
+            final statusLabel =
+                labelsByKey[p.effectiveStatusKey] ?? p.effectiveStatusKey;
+            final expiresAt = p.statusExpiresAt;
+            final isExpired = expiresAt == null || expiresAt.isBefore(nowUtc);
+            final timeLeft = expiresAt != null && !isExpired
+                ? expiresAt.difference(nowUtc)
+                : null;
+
+            return ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHigh,
+                child: Text(
+                  p.username.isNotEmpty ? p.username[0].toUpperCase() : '?',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
-              if (onEditActivity != null)
-                FilledButton.tonalIcon(
-                  onPressed: isUpdatingActivity ? null : onEditActivity,
-                  icon: isUpdatingActivity
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.edit_outlined),
-                  label: const Text('Edit'),
+              title: Row(
+                children: [
+                  Expanded(
+                    child: Text(p.username, overflow: TextOverflow.ellipsis),
+                  ),
+                  if (p.isCreator)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4),
+                      child: Icon(Icons.star_rounded, size: 16),
+                    ),
+                ],
+              ),
+              subtitle: Text(statusLabel),
+              trailing: timeLeft != null
+                  ? _Countdown(remaining: timeLeft)
+                  : null,
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _Countdown extends StatelessWidget {
+  const _Countdown({required this.remaining});
+
+  final Duration remaining;
+
+  @override
+  Widget build(BuildContext context) {
+    final hours = remaining.inHours;
+    final minutes = remaining.inMinutes % 60;
+    final seconds = remaining.inSeconds % 60;
+    final text = hours > 0
+        ? '${hours}h ${minutes}m'
+        : minutes > 0
+        ? '${minutes}m ${seconds}s'
+        : '${seconds}s';
+
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: Theme.of(context).colorScheme.primary,
+      ),
+    );
+  }
+}
+
+// ── Honk FAB ─────────────────────────────────────────────────────────────────
+
+class _HonkFab extends StatelessWidget {
+  const _HonkFab({
+    required this.details,
+    required this.state,
+    required this.activityId,
+    required this.isCreator,
+    required this.currentParticipant,
+    required this.nowUtc,
+  });
+
+  final HonkActivityDetails details;
+  final HonkDetailsState state;
+  final String activityId;
+  final bool isCreator;
+  final HonkParticipant? currentParticipant;
+  final DateTime nowUtc;
+
+  @override
+  Widget build(BuildContext context) {
+    final isSaving = state.isSavingStatus;
+    return FloatingActionButton.extended(
+      onPressed: isSaving ? null : () => _showStatusSheet(context),
+      icon: isSaving
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.campaign_rounded),
+      label: Text(
+        isSaving
+            ? 'Updating…'
+            : currentParticipant != null
+            ? 'Honk!'
+            : 'Honk!',
+      ),
+    );
+  }
+
+  void _showStatusSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => BlocProvider.value(
+        value: context.read<HonkDetailsCubit>(),
+        child: _StatusPickerSheet(
+          statusOptions: details.statusOptions,
+          currentStatusKey: currentParticipant?.effectiveStatusKey,
+          occurrenceStart: details.occurrenceStart,
+          activityId: activityId,
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusPickerSheet extends StatelessWidget {
+  const _StatusPickerSheet({
+    required this.statusOptions,
+    required this.currentStatusKey,
+    required this.occurrenceStart,
+    required this.activityId,
+  });
+
+  final List<HonkStatusOption> statusOptions;
+  final String? currentStatusKey;
+  final DateTime occurrenceStart;
+  final String activityId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Set your status',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          const Text('Others will be notified when you honk.'),
+          const SizedBox(height: 16),
+          ...statusOptions.map((option) {
+            final isCurrent = option.statusKey == currentStatusKey;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  style: isCurrent
+                      ? null
+                      : FilledButton.styleFrom(
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHigh,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onSurface,
+                        ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    context.read<HonkDetailsCubit>().setStatus(
+                      activityId: activityId,
+                      occurrenceStart: occurrenceStart,
+                      statusKey: option.statusKey,
+                    );
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(option.label, style: const TextStyle(fontSize: 16)),
+                      if (isCurrent)
+                        const Icon(Icons.check_circle_rounded, size: 20),
+                    ],
+                  ),
                 ),
-              if (onRotateInvite != null)
-                FilledButton.tonalIcon(
-                  onPressed: isRotatingInvite ? null : onRotateInvite,
-                  icon: isRotatingInvite
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.refresh),
-                  label: const Text('Rotate Invite'),
-                ),
-              if (onLeaveActivity != null)
-                OutlinedButton.icon(
-                  onPressed: isLeaving ? null : onLeaveActivity,
-                  icon: isLeaving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.exit_to_app),
-                  label: const Text('Leave'),
-                ),
-              if (onDeleteActivity != null)
-                OutlinedButton.icon(
-                  onPressed: isDeleting ? null : onDeleteActivity,
-                  icon: isDeleting
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Bottom action bar ─────────────────────────────────────────────────────────
+
+class _BottomActions extends StatelessWidget {
+  const _BottomActions({
+    required this.activityId,
+    required this.isCreator,
+    required this.state,
+  });
+
+  final String activityId;
+  final bool isCreator;
+  final HonkDetailsState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<HonkDetailsCubit>();
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            if (isCreator) ...[
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: state.isDeleting
+                      ? null
+                      : () => _confirmDelete(context, cubit),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                    side: BorderSide(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                  icon: state.isDeleting
                       ? const SizedBox(
                           width: 16,
                           height: 16,
@@ -548,451 +610,227 @@ class _ActivityDetailsView extends StatelessWidget {
                       : const Icon(Icons.delete_outline),
                   label: const Text('Delete'),
                 ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text('Your Status', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: statusOptions
-                .where((option) => option.isActive)
-                .map((option) {
-                  final currentStatus =
-                      details.currentUserParticipant?.effectiveStatusKey;
-                  final isSelected = currentStatus == option.statusKey;
-                  final isLoading = statusSubmittingKey == option.statusKey;
-                  return ChoiceChip(
-                    selected: isSelected,
-                    onSelected: isLoading
-                        ? null
-                        : (_) => onSetStatus(option.statusKey),
-                    label: isLoading
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(option.label),
-                            ],
-                          )
-                        : Text(option.label),
-                  );
-                })
-                .toList(growable: false),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Participants (${sortedParticipants.length})',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          ...sortedParticipants.map((participant) {
-            final isDefault =
-                participant.effectiveStatusKey == defaultStatus.statusKey;
-            final statusLabel =
-                statusLabelByKey[participant.effectiveStatusKey] ??
-                participant.effectiveStatusKey;
-            final expiry = participant.statusExpiresAt;
-            final showCountdown =
-                !isDefault && expiry != null && expiry.isAfter(nowUtc);
-            final subtitleText = showCountdown
-                ? '$statusLabel • resets in ${_formatCountdown(expiry, nowUtc)}'
-                : statusLabel;
-
-            return Card(
-              child: ListTile(
-                leading: Icon(
-                  participant.isCreator
-                      ? Icons.admin_panel_settings_outlined
-                      : Icons.person_outline,
-                ),
-                title: Text(
-                  participant.userId == details.currentUserId
-                      ? '${participant.username} (You)'
-                      : participant.username,
-                ),
-                subtitle: Text(subtitleText),
-                trailing: participant.isCreator
-                    ? const Text(
-                        'Creator',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      )
-                    : null,
               ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  String _formatDateTime(DateTime dateTime) {
-    final local = dateTime.toLocal();
-    final month = local.month.toString().padLeft(2, '0');
-    final day = local.day.toString().padLeft(2, '0');
-    final hour = local.hour.toString().padLeft(2, '0');
-    final minute = local.minute.toString().padLeft(2, '0');
-    return '${local.year}-$month-$day $hour:$minute';
-  }
-
-  String _formatRecurrence(String? recurrenceRrule) {
-    final rule = recurrenceRrule?.trim();
-    if (rule == null || rule.isEmpty) {
-      return 'One-time';
-    }
-    return rule;
-  }
-
-  String _formatCountdown(DateTime expiresAtUtc, DateTime nowUtc) {
-    final remaining = expiresAtUtc.difference(nowUtc);
-    if (remaining.isNegative) {
-      return 'now';
-    }
-
-    final hours = remaining.inHours;
-    final minutes = remaining.inMinutes % 60;
-    final seconds = remaining.inSeconds % 60;
-
-    if (hours > 0) {
-      return '${hours}h ${minutes}m';
-    }
-    if (minutes > 0) {
-      return '${minutes}m ${seconds}s';
-    }
-    return '${seconds}s';
-  }
-
-  String _formatDurationLabel(int seconds) {
-    if (seconds < 60) {
-      return '${seconds}s';
-    }
-    if (seconds < 3600) {
-      return '${seconds ~/ 60}m';
-    }
-    final hours = seconds ~/ 3600;
-    final minutes = (seconds % 3600) ~/ 60;
-    if (minutes == 0) {
-      return '${hours}h';
-    }
-    return '${hours}h ${minutes}m';
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 88,
-            child: Text(
-              '$label:',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ),
-          Expanded(child: Text(value)),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
+            ] else ...[
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: state.isLeaving
+                      ? null
+                      : () => _confirmLeave(context, cubit),
+                  icon: state.isLeaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.exit_to_app),
+                  label: const Text('Leave'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
-}
 
-class _EditActivityInput {
-  const _EditActivityInput({
-    required this.activity,
-    required this.location,
-    required this.details,
-    required this.startsAtUtc,
-    required this.recurrenceRrule,
-    required this.statusResetSeconds,
-    required this.statusOptions,
-  });
+  Future<void> _confirmDelete(
+    BuildContext context,
+    HonkDetailsCubit cubit,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete honk?'),
+        content: const Text(
+          'This permanently removes the honk for all members.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await cubit.deleteActivity(activityId);
+    }
+  }
 
-  final String activity;
-  final String location;
-  final String? details;
-  final DateTime startsAtUtc;
-  final String? recurrenceRrule;
-  final int statusResetSeconds;
-  final List<HonkStatusOption> statusOptions;
-}
-
-class _StatusOptionEditorRow {
-  _StatusOptionEditorRow({required String statusKey, required String label})
-    : statusKeyController = TextEditingController(text: statusKey),
-      labelController = TextEditingController(text: label);
-
-  final TextEditingController statusKeyController;
-  final TextEditingController labelController;
-
-  void dispose() {
-    statusKeyController.dispose();
-    labelController.dispose();
+  Future<void> _confirmLeave(
+    BuildContext context,
+    HonkDetailsCubit cubit,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Leave honk?'),
+        content: const Text('You can rejoin later using an invite code.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await cubit.leaveActivity(activityId);
+    }
   }
 }
 
-class _EditActivityDialog extends StatefulWidget {
-  const _EditActivityDialog({
-    required this.activity,
-    required this.statusOptions,
-  });
+// ── Edit honk dialog ──────────────────────────────────────────────────────────
 
-  final HonkActivity activity;
-  final List<HonkStatusOption> statusOptions;
+class _EditHonkDialog extends StatefulWidget {
+  const _EditHonkDialog({required this.details, required this.activityId});
+
+  final HonkActivityDetails details;
+  final String activityId;
 
   @override
-  State<_EditActivityDialog> createState() => _EditActivityDialogState();
+  State<_EditHonkDialog> createState() => _EditHonkDialogState();
 }
 
-class _EditActivityDialogState extends State<_EditActivityDialog> {
+class _EditHonkDialogState extends State<_EditHonkDialog> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _activityController;
-  late final TextEditingController _locationController;
-  late final TextEditingController _detailsController;
+  late final TextEditingController _activityCtrl;
+  late final TextEditingController _locationCtrl;
+  late final TextEditingController _detailsCtrl;
 
   late DateTime _startsAtUtc;
   late String _recurrenceType;
-  late Set<int> _weeklyDays;
+  final Set<int> _weeklyDays = {};
   late int _statusResetSeconds;
-  late List<_StatusOptionEditorRow> _statusRows;
+  late final List<_EditStatusRow> _statusRows;
   late int _defaultStatusIndex;
 
   @override
   void initState() {
     super.initState();
-    _activityController = TextEditingController(text: widget.activity.activity);
-    _locationController = TextEditingController(text: widget.activity.location);
-    _detailsController = TextEditingController(
-      text: widget.activity.details ?? '',
-    );
-    _startsAtUtc = widget.activity.startsAt;
-    _statusResetSeconds = widget.activity.statusResetSeconds;
+    final a = widget.details.activity;
+    _activityCtrl = TextEditingController(text: a.activity);
+    _locationCtrl = TextEditingController(text: a.location);
+    _detailsCtrl = TextEditingController(text: a.details ?? '');
+    _startsAtUtc = a.startsAt;
+    _statusResetSeconds = a.statusResetSeconds;
 
-    final recurrence = widget.activity.recurrenceRrule?.toUpperCase() ?? '';
-    if (recurrence.contains('FREQ=DAILY')) {
+    // Parse recurrence rrule.
+    final rrule = a.recurrenceRrule;
+    if (rrule == null || rrule.isEmpty) {
+      _recurrenceType = 'none';
+    } else if (rrule.startsWith('FREQ=DAILY')) {
       _recurrenceType = 'daily';
-    } else if (recurrence.contains('FREQ=WEEKLY')) {
+    } else if (rrule.startsWith('FREQ=WEEKLY')) {
       _recurrenceType = 'weekly';
+      final byDayMatch = RegExp(r'BYDAY=([^;]+)').firstMatch(rrule);
+      if (byDayMatch != null) {
+        for (final code in byDayMatch.group(1)!.split(',')) {
+          const dayMap = {
+            'MO': DateTime.monday,
+            'TU': DateTime.tuesday,
+            'WE': DateTime.wednesday,
+            'TH': DateTime.thursday,
+            'FR': DateTime.friday,
+            'SA': DateTime.saturday,
+            'SU': DateTime.sunday,
+          };
+          final day = dayMap[code.trim()];
+          if (day != null) _weeklyDays.add(day);
+        }
+      }
     } else {
       _recurrenceType = 'none';
     }
-    _weeklyDays = _parseWeeklyDays(widget.activity.recurrenceRrule);
 
-    _statusRows = widget.statusOptions
-        .where((option) => option.isActive)
-        .map(
-          (option) => _StatusOptionEditorRow(
-            statusKey: option.statusKey,
-            label: option.label,
-          ),
-        )
-        .toList(growable: true);
-    if (_statusRows.isEmpty) {
-      _statusRows = [
-        _StatusOptionEditorRow(statusKey: 'going', label: 'Going'),
-        _StatusOptionEditorRow(statusKey: 'maybe', label: 'Maybe'),
-      ];
-    }
-    _defaultStatusIndex = widget.statusOptions.indexWhere((o) => o.isDefault);
-    if (_defaultStatusIndex < 0 || _defaultStatusIndex >= _statusRows.length) {
-      _defaultStatusIndex = 0;
-    }
+    // Status options
+    final options = widget.details.statusOptions;
+    _statusRows = options
+        .map((o) => _EditStatusRow(statusKey: o.statusKey, label: o.label))
+        .toList();
+    _defaultStatusIndex = options.indexWhere((o) => o.isDefault);
+    if (_defaultStatusIndex < 0) _defaultStatusIndex = 0;
   }
 
   @override
   void dispose() {
-    _activityController.dispose();
-    _locationController.dispose();
-    _detailsController.dispose();
-    for (final row in _statusRows) {
-      row.dispose();
+    _activityCtrl.dispose();
+    _locationCtrl.dispose();
+    _detailsCtrl.dispose();
+    for (final r in _statusRows) {
+      r.dispose();
     }
     super.dispose();
   }
 
-  Set<int> _parseWeeklyDays(String? rrule) {
-    final normalized = rrule?.toUpperCase() ?? '';
-    final byDayIndex = normalized.indexOf('BYDAY=');
-    if (byDayIndex < 0) {
-      return <int>{};
-    }
+  String _weekdayCode(int day) {
+    const codes = {
+      DateTime.monday: 'MO',
+      DateTime.tuesday: 'TU',
+      DateTime.wednesday: 'WE',
+      DateTime.thursday: 'TH',
+      DateTime.friday: 'FR',
+      DateTime.saturday: 'SA',
+      DateTime.sunday: 'SU',
+    };
+    return codes[day] ?? 'MO';
+  }
 
-    final rawByDay = normalized.substring(byDayIndex + 6);
-    final stopIndex = rawByDay.indexOf(';');
-    final byDayPart = stopIndex >= 0
-        ? rawByDay.substring(0, stopIndex)
-        : rawByDay;
-    final days = <int>{};
-    for (final code in byDayPart.split(',')) {
-      switch (code.trim()) {
-        case 'MO':
-          days.add(DateTime.monday);
-          break;
-        case 'TU':
-          days.add(DateTime.tuesday);
-          break;
-        case 'WE':
-          days.add(DateTime.wednesday);
-          break;
-        case 'TH':
-          days.add(DateTime.thursday);
-          break;
-        case 'FR':
-          days.add(DateTime.friday);
-          break;
-        case 'SA':
-          days.add(DateTime.saturday);
-          break;
-        case 'SU':
-          days.add(DateTime.sunday);
-          break;
-      }
-    }
-    return days;
+  String _formatDateTime(DateTime utc) {
+    final l = utc.toLocal();
+    final m = l.month.toString().padLeft(2, '0');
+    final d = l.day.toString().padLeft(2, '0');
+    final h = l.hour.toString().padLeft(2, '0');
+    final min = l.minute.toString().padLeft(2, '0');
+    return '${l.year}-$m-$d $h:$min';
   }
 
   Future<void> _pickStartsAt() async {
     final now = DateTime.now();
-    final currentLocal = _startsAtUtc.toLocal();
-    final pickedDate = await showDatePicker(
+    final local = _startsAtUtc.toLocal();
+    final date = await showDatePicker(
       context: context,
-      initialDate: currentLocal,
+      initialDate: local,
       firstDate: now.subtract(const Duration(days: 1)),
-      lastDate: now.add(const Duration(days: 730)),
+      lastDate: now.add(const Duration(days: 365)),
     );
-    if (pickedDate == null || !mounted) {
-      return;
-    }
-
-    final pickedTime = await showTimePicker(
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.fromDateTime(currentLocal),
+      initialTime: TimeOfDay.fromDateTime(local),
     );
-    if (pickedTime == null || !mounted) {
-      return;
-    }
-
+    if (time == null || !mounted) return;
     setState(() {
       _startsAtUtc = DateTime(
-        pickedDate.year,
-        pickedDate.month,
-        pickedDate.day,
-        pickedTime.hour,
-        pickedTime.minute,
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
       ).toUtc();
     });
   }
 
-  String _weekdayCode(int day) {
-    switch (day) {
-      case DateTime.monday:
-        return 'MO';
-      case DateTime.tuesday:
-        return 'TU';
-      case DateTime.wednesday:
-        return 'WE';
-      case DateTime.thursday:
-        return 'TH';
-      case DateTime.friday:
-        return 'FR';
-      case DateTime.saturday:
-        return 'SA';
-      case DateTime.sunday:
-        return 'SU';
-      default:
-        return 'MO';
-    }
-  }
-
-  String? _buildRecurrenceRrule() {
-    if (_recurrenceType == 'none') {
-      return null;
-    }
-    if (_recurrenceType == 'daily') {
-      return 'FREQ=DAILY';
-    }
-    final days = _weeklyDays.isEmpty
-        ? <int>{_startsAtUtc.toLocal().weekday}
-        : _weeklyDays;
-    final byDay = days.map(_weekdayCode).join(',');
-    return 'FREQ=WEEKLY;BYDAY=$byDay';
-  }
-
   List<HonkStatusOption>? _buildStatusOptions() {
-    if (_statusRows.length < 2 || _statusRows.length > 8) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Status options must be between 2 and 8 entries.'),
-        ),
-      );
-      return null;
-    }
-
+    if (_statusRows.length < 2) return null;
     final options = <HonkStatusOption>[];
     for (int i = 0; i < _statusRows.length; i++) {
-      final key = _statusRows[i].statusKeyController.text.trim();
-      final label = _statusRows[i].labelController.text.trim();
-      if (key.isEmpty || label.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Status key and label are required for each option.'),
-          ),
-        );
-        return null;
-      }
-      if (!RegExp(r'^[a-z0-9_]+$').hasMatch(key)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Invalid status key "$key". Use snake_case.')),
-        );
-        return null;
-      }
-
+      final key = _statusRows[i].statusKeyCtrl.text.trim();
+      final label = _statusRows[i].labelCtrl.text.trim();
+      if (key.isEmpty || label.isEmpty) return null;
+      if (!RegExp(r'^[a-z0-9_]+$').hasMatch(key)) return null;
       options.add(
         HonkStatusOption(
           statusKey: key,
@@ -1003,223 +841,185 @@ class _EditActivityDialogState extends State<_EditActivityDialog> {
         ),
       );
     }
-
-    final uniqueKeys = options.map((option) => option.statusKey).toSet();
-    if (uniqueKeys.length != options.length) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Status keys must be unique.')),
-      );
+    if (options.map((o) => o.statusKey).toSet().length != options.length) {
       return null;
     }
     return options;
   }
 
-  void _submit() {
-    if (_formKey.currentState?.validate() != true) {
+  String? _buildRecurrenceRrule() {
+    switch (_recurrenceType) {
+      case 'daily':
+        return 'FREQ=DAILY';
+      case 'weekly':
+        final days = _weeklyDays.isEmpty
+            ? {_startsAtUtc.toLocal().weekday}
+            : _weeklyDays;
+        final byDay = days.map(_weekdayCode).join(',');
+        return 'FREQ=WEEKLY;BYDAY=$byDay';
+      default:
+        return null;
+    }
+  }
+
+  void _save() {
+    if (_formKey.currentState?.validate() != true) return;
+    final opts = _buildStatusOptions();
+    if (opts == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Check status options.')));
       return;
     }
-
-    final statusOptions = _buildStatusOptions();
-    if (statusOptions == null) {
-      return;
-    }
-
-    Navigator.of(context).pop(
-      _EditActivityInput(
-        activity: _activityController.text.trim(),
-        location: _locationController.text.trim(),
-        details: _detailsController.text.trim().isEmpty
-            ? null
-            : _detailsController.text.trim(),
-        startsAtUtc: _startsAtUtc,
-        recurrenceRrule: _buildRecurrenceRrule(),
-        statusResetSeconds: _statusResetSeconds,
-        statusOptions: statusOptions,
-      ),
+    Navigator.of(context).pop();
+    context.read<HonkDetailsCubit>().updateActivity(
+      activityId: widget.activityId,
+      activity: _activityCtrl.text.trim(),
+      location: _locationCtrl.text.trim(),
+      details: _detailsCtrl.text.trim().isEmpty
+          ? null
+          : _detailsCtrl.text.trim(),
+      startsAt: _startsAtUtc,
+      recurrenceRrule: _buildRecurrenceRrule(),
+      recurrenceTimezone: widget.details.activity.recurrenceTimezone,
+      statusResetSeconds: _statusResetSeconds,
+      statusOptions: opts,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Edit Activity'),
-      content: SizedBox(
-        width: 640,
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextFormField(
-                  controller: _activityController,
-                  decoration: const InputDecoration(labelText: 'Activity'),
-                  validator: _requiredValidator,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _locationController,
-                  decoration: const InputDecoration(labelText: 'Location'),
-                  validator: _requiredValidator,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _detailsController,
-                  decoration: const InputDecoration(labelText: 'Details'),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 12),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Starts at'),
-                  subtitle: Text(_formatDateTime(_startsAtUtc)),
-                  trailing: TextButton(
-                    onPressed: _pickStartsAt,
-                    child: const Text('Change'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  initialValue: _recurrenceType,
-                  decoration: const InputDecoration(labelText: 'Recurrence'),
-                  items: const [
-                    DropdownMenuItem(value: 'none', child: Text('One-time')),
-                    DropdownMenuItem(value: 'daily', child: Text('Daily')),
-                    DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
-                  ],
-                  onChanged: (value) {
-                    if (value == null) {
-                      return;
-                    }
-                    setState(() {
-                      _recurrenceType = value;
-                    });
-                  },
-                ),
-                if (_recurrenceType == 'weekly') ...[
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: List.generate(7, (index) {
-                      final day = index + 1;
-                      final selected = _weeklyDays.contains(day);
-                      return FilterChip(
-                        selected: selected,
-                        label: Text(_weekdayCode(day)),
-                        onSelected: (value) {
-                          setState(() {
-                            if (value) {
-                              _weeklyDays.add(day);
-                            } else {
-                              _weeklyDays.remove(day);
-                            }
-                          });
-                        },
-                      );
+      title: const Text('Edit Honk'),
+      scrollable: true,
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextFormField(
+              controller: _activityCtrl,
+              decoration: const InputDecoration(labelText: 'Activity *'),
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Required' : null,
+            ),
+            TextFormField(
+              controller: _locationCtrl,
+              decoration: const InputDecoration(labelText: 'Location *'),
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Required' : null,
+            ),
+            TextFormField(
+              controller: _detailsCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Details (optional)',
+              ),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Starts at'),
+              subtitle: Text(_formatDateTime(_startsAtUtc)),
+              trailing: TextButton(
+                onPressed: _pickStartsAt,
+                child: const Text('Change'),
+              ),
+            ),
+            DropdownButtonFormField<String>(
+              initialValue: _recurrenceType,
+              decoration: const InputDecoration(labelText: 'Recurrence'),
+              items: const [
+                DropdownMenuItem(value: 'none', child: Text('One-time')),
+                DropdownMenuItem(value: 'daily', child: Text('Daily')),
+                DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => _recurrenceType = v);
+              },
+            ),
+            if (_recurrenceType == 'weekly') ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                children: List.generate(7, (i) {
+                  final wd = i + 1;
+                  return FilterChip(
+                    label: Text(_weekdayCode(wd)),
+                    selected: _weeklyDays.contains(wd),
+                    onSelected: (s) => setState(() {
+                      if (s) {
+                        _weeklyDays.add(wd);
+                      } else {
+                        _weeklyDays.remove(wd);
+                      }
                     }),
-                  ),
-                ],
-                const SizedBox(height: 8),
-                DropdownButtonFormField<int>(
-                  initialValue: _statusResetSeconds,
-                  decoration: const InputDecoration(
-                    labelText: 'Status reset window',
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 600, child: Text('10 minutes')),
-                    DropdownMenuItem(value: 1800, child: Text('30 minutes')),
-                    DropdownMenuItem(value: 3600, child: Text('1 hour')),
-                    DropdownMenuItem(value: 7200, child: Text('2 hours')),
-                  ],
-                  onChanged: (value) {
-                    if (value == null) {
-                      return;
-                    }
-                    setState(() {
-                      _statusResetSeconds = value;
-                    });
-                  },
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Status Options',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                ...List.generate(_statusRows.length, (index) {
-                  final row = _statusRows[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          tooltip: 'Set default',
-                          onPressed: () {
-                            setState(() {
-                              _defaultStatusIndex = index;
-                            });
-                          },
-                          icon: Icon(
-                            index == _defaultStatusIndex
-                                ? Icons.radio_button_checked
-                                : Icons.radio_button_unchecked,
-                          ),
-                        ),
-                        Expanded(
-                          child: TextField(
-                            controller: row.statusKeyController,
-                            decoration: const InputDecoration(labelText: 'Key'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: row.labelController,
-                            decoration: const InputDecoration(
-                              labelText: 'Label',
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: _statusRows.length <= 2
-                              ? null
-                              : () {
-                                  setState(() {
-                                    _statusRows.removeAt(index).dispose();
-                                    if (_defaultStatusIndex >=
-                                        _statusRows.length) {
-                                      _defaultStatusIndex =
-                                          _statusRows.length - 1;
-                                    }
-                                  });
-                                },
-                          icon: const Icon(Icons.delete_outline),
-                        ),
-                      ],
-                    ),
                   );
                 }),
-                TextButton.icon(
-                  onPressed: _statusRows.length >= 8
-                      ? null
-                      : () {
-                          setState(() {
-                            final suffix = _statusRows.length + 1;
-                            _statusRows.add(
-                              _StatusOptionEditorRow(
-                                statusKey: 'status_$suffix',
-                                label: 'Status $suffix',
-                              ),
-                            );
-                          });
-                        },
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Status Option'),
-                ),
+              ),
+            ],
+            DropdownButtonFormField<int>(
+              initialValue: _statusResetSeconds,
+              decoration: const InputDecoration(
+                labelText: 'Status resets after',
+              ),
+              items: const [
+                DropdownMenuItem(value: 600, child: Text('10 minutes')),
+                DropdownMenuItem(value: 1800, child: Text('30 minutes')),
+                DropdownMenuItem(value: 3600, child: Text('1 hour')),
+                DropdownMenuItem(value: 7200, child: Text('2 hours')),
               ],
+              onChanged: (v) {
+                if (v != null) setState(() => _statusResetSeconds = v);
+              },
             ),
-          ),
+            const SizedBox(height: 12),
+            ...List.generate(_statusRows.length, (i) {
+              final row = _statusRows[i];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => setState(() => _defaultStatusIndex = i),
+                      icon: Icon(
+                        i == _defaultStatusIndex
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                      ),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: row.statusKeyCtrl,
+                        decoration: const InputDecoration(labelText: 'Key'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: row.labelCtrl,
+                        decoration: const InputDecoration(labelText: 'Label'),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _statusRows.length <= 2
+                          ? null
+                          : () {
+                              setState(() {
+                                _statusRows.removeAt(i).dispose();
+                                if (_defaultStatusIndex >= _statusRows.length) {
+                                  _defaultStatusIndex = _statusRows.length - 1;
+                                }
+                              });
+                            },
+                      icon: const Icon(Icons.remove_circle_outline),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
         ),
       ),
       actions: [
@@ -1227,24 +1027,63 @@ class _EditActivityDialogState extends State<_EditActivityDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Save')),
+        FilledButton(onPressed: _save, child: const Text('Save')),
       ],
     );
   }
+}
 
-  String _formatDateTime(DateTime dateTime) {
-    final local = dateTime.toLocal();
-    final month = local.month.toString().padLeft(2, '0');
-    final day = local.day.toString().padLeft(2, '0');
-    final hour = local.hour.toString().padLeft(2, '0');
-    final minute = local.minute.toString().padLeft(2, '0');
-    return '${local.year}-$month-$day $hour:$minute';
+class _EditStatusRow {
+  _EditStatusRow({required String statusKey, required String label})
+    : statusKeyCtrl = TextEditingController(text: statusKey),
+      labelCtrl = TextEditingController(text: label);
+
+  final TextEditingController statusKeyCtrl;
+  final TextEditingController labelCtrl;
+
+  void dispose() {
+    statusKeyCtrl.dispose();
+    labelCtrl.dispose();
   }
+}
 
-  String? _requiredValidator(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'This field is required.';
-    }
-    return null;
+// ── Copyable row ──────────────────────────────────────────────────────────────
+
+class _CopyableRow extends StatelessWidget {
+  const _CopyableRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: Theme.of(context).textTheme.labelSmall),
+              Text(
+                value,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontFamily: 'monospace'),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          tooltip: 'Copy',
+          icon: const Icon(Icons.copy, size: 18),
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: value));
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('$label copied!')));
+          },
+        ),
+      ],
+    );
   }
 }

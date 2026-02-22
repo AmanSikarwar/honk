@@ -1,15 +1,14 @@
-class HonkStatusOption {
-  const HonkStatusOption({
-    required this.statusKey,
-    required this.label,
-    required this.sortOrder,
-    required this.isDefault,
-    required this.isActive,
-  });
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  final String statusKey;
-  final String label;
-  final int sortOrder;
-  final bool isDefault;
-  final bool isActive;
+part 'honk_status_option.freezed.dart';
+
+@freezed
+abstract class HonkStatusOption with _$HonkStatusOption {
+  const factory HonkStatusOption({
+    required String statusKey,
+    required String label,
+    required int sortOrder,
+    required bool isDefault,
+    @Default(true) bool isActive,
+  }) = _HonkStatusOption;
 }

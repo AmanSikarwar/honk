@@ -8,10 +8,7 @@ part of 'app_router.dart';
 
 List<RouteBase> get $appRoutes => [
   $homeRoute,
-  $honkDetailsRoute,
   $inviteJoinRoute,
-  $friendManagementRoute,
-  $settingsRoute,
   $loginRoute,
   $signUpRoute,
   $forgotPasswordRoute,
@@ -19,8 +16,25 @@ List<RouteBase> get $appRoutes => [
   $emailVerificationRoute,
 ];
 
-RouteBase get $homeRoute =>
-    GoRouteData.$route(path: '/', factory: $HomeRoute._fromState);
+RouteBase get $homeRoute => GoRouteData.$route(
+  path: '/',
+  factory: $HomeRoute._fromState,
+  routes: [
+    GoRouteData.$route(
+      path: 'activities/create',
+      factory: $CreateHonkRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: 'activities/:activityId',
+      factory: $HonkDetailsRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: 'friends',
+      factory: $FriendManagementRoute._fromState,
+    ),
+    GoRouteData.$route(path: 'settings', factory: $SettingsRoute._fromState),
+  ],
+);
 
 mixin $HomeRoute on GoRouteData {
   static HomeRoute _fromState(GoRouterState state) => const HomeRoute();
@@ -42,10 +56,26 @@ mixin $HomeRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-RouteBase get $honkDetailsRoute => GoRouteData.$route(
-  path: '/activities/:activityId',
-  factory: $HonkDetailsRoute._fromState,
-);
+mixin $CreateHonkRoute on GoRouteData {
+  static CreateHonkRoute _fromState(GoRouterState state) =>
+      const CreateHonkRoute();
+
+  @override
+  String get location => GoRouteData.$location('/activities/create');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
 
 mixin $HonkDetailsRoute on GoRouteData {
   static HonkDetailsRoute _fromState(GoRouterState state) =>
@@ -57,6 +87,47 @@ mixin $HonkDetailsRoute on GoRouteData {
   String get location => GoRouteData.$location(
     '/activities/${Uri.encodeComponent(_self.activityId)}',
   );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $FriendManagementRoute on GoRouteData {
+  static FriendManagementRoute _fromState(GoRouterState state) =>
+      const FriendManagementRoute();
+
+  @override
+  String get location => GoRouteData.$location('/friends');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $SettingsRoute on GoRouteData {
+  static SettingsRoute _fromState(GoRouterState state) => const SettingsRoute();
+
+  @override
+  String get location => GoRouteData.$location('/settings');
 
   @override
   void go(BuildContext context) => context.go(location);
@@ -86,55 +157,6 @@ mixin $InviteJoinRoute on GoRouteData {
   @override
   String get location =>
       GoRouteData.$location('/join/${Uri.encodeComponent(_self.inviteCode)}');
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-RouteBase get $friendManagementRoute => GoRouteData.$route(
-  path: '/friends',
-  factory: $FriendManagementRoute._fromState,
-);
-
-mixin $FriendManagementRoute on GoRouteData {
-  static FriendManagementRoute _fromState(GoRouterState state) =>
-      const FriendManagementRoute();
-
-  @override
-  String get location => GoRouteData.$location('/friends');
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-RouteBase get $settingsRoute =>
-    GoRouteData.$route(path: '/settings', factory: $SettingsRoute._fromState);
-
-mixin $SettingsRoute on GoRouteData {
-  static SettingsRoute _fromState(GoRouterState state) => const SettingsRoute();
-
-  @override
-  String get location => GoRouteData.$location('/settings');
 
   @override
   void go(BuildContext context) => context.go(location);

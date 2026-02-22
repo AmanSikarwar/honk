@@ -3,7 +3,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'action_pad_cubit.dart';
+part of 'join_honk_cubit.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -12,7 +12,7 @@ part of 'action_pad_cubit.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
-mixin _$ActionPadState {
+mixin _$JoinHonkState {
 
 
 
@@ -20,7 +20,7 @@ mixin _$ActionPadState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActionPadState);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is JoinHonkState);
 }
 
 
@@ -29,20 +29,20 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ActionPadState()';
+  return 'JoinHonkState()';
 }
 
 
 }
 
 /// @nodoc
-class $ActionPadStateCopyWith<$Res>  {
-$ActionPadStateCopyWith(ActionPadState _, $Res Function(ActionPadState) __);
+class $JoinHonkStateCopyWith<$Res>  {
+$JoinHonkStateCopyWith(JoinHonkState _, $Res Function(JoinHonkState) __);
 }
 
 
-/// Adds pattern-matching-related methods to [ActionPadState].
-extension ActionPadStatePatterns on ActionPadState {
+/// Adds pattern-matching-related methods to [JoinHonkState].
+extension JoinHonkStatePatterns on JoinHonkState {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -55,12 +55,12 @@ extension ActionPadStatePatterns on ActionPadState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _Idle value)?  idle,TResult Function( _Submitting value)?  submitting,TResult Function( _Success value)?  success,TResult Function( _Failure value)?  failure,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _Idle value)?  idle,TResult Function( _Loading value)?  loading,TResult Function( _Success value)?  success,TResult Function( _Failure value)?  failure,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _Idle() when idle != null:
-return idle(_that);case _Submitting() when submitting != null:
-return submitting(_that);case _Success() when success != null:
+return idle(_that);case _Loading() when loading != null:
+return loading(_that);case _Success() when success != null:
 return success(_that);case _Failure() when failure != null:
 return failure(_that);case _:
   return orElse();
@@ -80,12 +80,12 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _Idle value)  idle,required TResult Function( _Submitting value)  submitting,required TResult Function( _Success value)  success,required TResult Function( _Failure value)  failure,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _Idle value)  idle,required TResult Function( _Loading value)  loading,required TResult Function( _Success value)  success,required TResult Function( _Failure value)  failure,}){
 final _that = this;
 switch (_that) {
 case _Idle():
-return idle(_that);case _Submitting():
-return submitting(_that);case _Success():
+return idle(_that);case _Loading():
+return loading(_that);case _Success():
 return success(_that);case _Failure():
 return failure(_that);case _:
   throw StateError('Unexpected subclass');
@@ -104,12 +104,12 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _Idle value)?  idle,TResult? Function( _Submitting value)?  submitting,TResult? Function( _Success value)?  success,TResult? Function( _Failure value)?  failure,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _Idle value)?  idle,TResult? Function( _Loading value)?  loading,TResult? Function( _Success value)?  success,TResult? Function( _Failure value)?  failure,}){
 final _that = this;
 switch (_that) {
 case _Idle() when idle != null:
-return idle(_that);case _Submitting() when submitting != null:
-return submitting(_that);case _Success() when success != null:
+return idle(_that);case _Loading() when loading != null:
+return loading(_that);case _Success() when success != null:
 return success(_that);case _Failure() when failure != null:
 return failure(_that);case _:
   return null;
@@ -128,12 +128,12 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function()?  submitting,TResult Function( HonkActivity activity)?  success,TResult Function( MainFailure failure)?  failure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function()?  loading,TResult Function( String activityId)?  success,TResult Function( MainFailure failure)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Idle() when idle != null:
-return idle();case _Submitting() when submitting != null:
-return submitting();case _Success() when success != null:
-return success(_that.activity);case _Failure() when failure != null:
+return idle();case _Loading() when loading != null:
+return loading();case _Success() when success != null:
+return success(_that.activityId);case _Failure() when failure != null:
 return failure(_that.failure);case _:
   return orElse();
 
@@ -152,12 +152,12 @@ return failure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function()  submitting,required TResult Function( HonkActivity activity)  success,required TResult Function( MainFailure failure)  failure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function()  loading,required TResult Function( String activityId)  success,required TResult Function( MainFailure failure)  failure,}) {final _that = this;
 switch (_that) {
 case _Idle():
-return idle();case _Submitting():
-return submitting();case _Success():
-return success(_that.activity);case _Failure():
+return idle();case _Loading():
+return loading();case _Success():
+return success(_that.activityId);case _Failure():
 return failure(_that.failure);case _:
   throw StateError('Unexpected subclass');
 
@@ -175,12 +175,12 @@ return failure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function()?  submitting,TResult? Function( HonkActivity activity)?  success,TResult? Function( MainFailure failure)?  failure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function()?  loading,TResult? Function( String activityId)?  success,TResult? Function( MainFailure failure)?  failure,}) {final _that = this;
 switch (_that) {
 case _Idle() when idle != null:
-return idle();case _Submitting() when submitting != null:
-return submitting();case _Success() when success != null:
-return success(_that.activity);case _Failure() when failure != null:
+return idle();case _Loading() when loading != null:
+return loading();case _Success() when success != null:
+return success(_that.activityId);case _Failure() when failure != null:
 return failure(_that.failure);case _:
   return null;
 
@@ -192,7 +192,7 @@ return failure(_that.failure);case _:
 /// @nodoc
 
 
-class _Idle implements ActionPadState {
+class _Idle implements JoinHonkState {
   const _Idle();
   
 
@@ -212,7 +212,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ActionPadState.idle()';
+  return 'JoinHonkState.idle()';
 }
 
 
@@ -224,8 +224,8 @@ String toString() {
 /// @nodoc
 
 
-class _Submitting implements ActionPadState {
-  const _Submitting();
+class _Loading implements JoinHonkState {
+  const _Loading();
   
 
 
@@ -235,7 +235,7 @@ class _Submitting implements ActionPadState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Submitting);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Loading);
 }
 
 
@@ -244,7 +244,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ActionPadState.submitting()';
+  return 'JoinHonkState.loading()';
 }
 
 
@@ -256,13 +256,13 @@ String toString() {
 /// @nodoc
 
 
-class _Success implements ActionPadState {
-  const _Success(this.activity);
+class _Success implements JoinHonkState {
+  const _Success(this.activityId);
   
 
- final  HonkActivity activity;
+ final  String activityId;
 
-/// Create a copy of ActionPadState
+/// Create a copy of JoinHonkState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
@@ -272,27 +272,27 @@ _$SuccessCopyWith<_Success> get copyWith => __$SuccessCopyWithImpl<_Success>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Success&&(identical(other.activity, activity) || other.activity == activity));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Success&&(identical(other.activityId, activityId) || other.activityId == activityId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,activity);
+int get hashCode => Object.hash(runtimeType,activityId);
 
 @override
 String toString() {
-  return 'ActionPadState.success(activity: $activity)';
+  return 'JoinHonkState.success(activityId: $activityId)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$SuccessCopyWith<$Res> implements $ActionPadStateCopyWith<$Res> {
+abstract mixin class _$SuccessCopyWith<$Res> implements $JoinHonkStateCopyWith<$Res> {
   factory _$SuccessCopyWith(_Success value, $Res Function(_Success) _then) = __$SuccessCopyWithImpl;
 @useResult
 $Res call({
- HonkActivity activity
+ String activityId
 });
 
 
@@ -307,12 +307,12 @@ class __$SuccessCopyWithImpl<$Res>
   final _Success _self;
   final $Res Function(_Success) _then;
 
-/// Create a copy of ActionPadState
+/// Create a copy of JoinHonkState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? activity = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? activityId = null,}) {
   return _then(_Success(
-null == activity ? _self.activity : activity // ignore: cast_nullable_to_non_nullable
-as HonkActivity,
+null == activityId ? _self.activityId : activityId // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 
@@ -322,13 +322,13 @@ as HonkActivity,
 /// @nodoc
 
 
-class _Failure implements ActionPadState {
+class _Failure implements JoinHonkState {
   const _Failure(this.failure);
   
 
  final  MainFailure failure;
 
-/// Create a copy of ActionPadState
+/// Create a copy of JoinHonkState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
@@ -347,14 +347,14 @@ int get hashCode => Object.hash(runtimeType,failure);
 
 @override
 String toString() {
-  return 'ActionPadState.failure(failure: $failure)';
+  return 'JoinHonkState.failure(failure: $failure)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$FailureCopyWith<$Res> implements $ActionPadStateCopyWith<$Res> {
+abstract mixin class _$FailureCopyWith<$Res> implements $JoinHonkStateCopyWith<$Res> {
   factory _$FailureCopyWith(_Failure value, $Res Function(_Failure) _then) = __$FailureCopyWithImpl;
 @useResult
 $Res call({
@@ -373,7 +373,7 @@ class __$FailureCopyWithImpl<$Res>
   final _Failure _self;
   final $Res Function(_Failure) _then;
 
-/// Create a copy of ActionPadState
+/// Create a copy of JoinHonkState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') $Res call({Object? failure = null,}) {
   return _then(_Failure(
@@ -382,7 +382,7 @@ as MainFailure,
   ));
 }
 
-/// Create a copy of ActionPadState
+/// Create a copy of JoinHonkState
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')

@@ -1,27 +1,26 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
 import 'honk_activity.dart';
 import 'honk_participant.dart';
 import 'honk_status_option.dart';
 
-class HonkActivityDetails {
-  const HonkActivityDetails({
-    required this.activity,
-    required this.occurrenceStart,
-    required this.statusOptions,
-    required this.participants,
-    required this.currentUserId,
-  });
+part 'honk_activity_details.freezed.dart';
 
-  final HonkActivity activity;
-  final DateTime occurrenceStart;
-  final List<HonkStatusOption> statusOptions;
-  final List<HonkParticipant> participants;
-  final String currentUserId;
+@freezed
+abstract class HonkActivityDetails with _$HonkActivityDetails {
+  const HonkActivityDetails._();
+
+  const factory HonkActivityDetails({
+    required HonkActivity activity,
+    required DateTime occurrenceStart,
+    required List<HonkStatusOption> statusOptions,
+    required List<HonkParticipant> participants,
+    required String currentUserId,
+  }) = _HonkActivityDetails;
 
   HonkParticipant? get currentUserParticipant {
-    for (final participant in participants) {
-      if (participant.userId == currentUserId) {
-        return participant;
-      }
+    for (final p in participants) {
+      if (p.userId == currentUserId) return p;
     }
     return null;
   }

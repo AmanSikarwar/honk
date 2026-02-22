@@ -11,10 +11,12 @@ import '../../features/auth/presentation/pages/update_password_page.dart';
 import '../../features/friends/presentation/cubit/friend_management_cubit.dart';
 import '../../features/friends/presentation/pages/friend_management_page.dart';
 import '../../features/honk/presentation/bloc/honk_feed_bloc.dart';
-import '../../features/honk/presentation/cubit/action_pad_cubit.dart';
-import '../../features/honk/domain/repositories/i_honk_repository.dart';
-import '../../features/honk/presentation/pages/home_dashboard_page.dart';
+import '../../features/honk/presentation/cubit/create_honk_cubit.dart';
+import '../../features/honk/presentation/cubit/honk_details_cubit.dart';
+import '../../features/honk/presentation/cubit/join_honk_cubit.dart';
+import '../../features/honk/presentation/pages/create_honk_page.dart';
 import '../../features/honk/presentation/pages/honk_details_page.dart';
+import '../../features/honk/presentation/pages/honk_feed_page.dart';
 import '../../features/honk/presentation/pages/invite_join_page.dart';
 import '../../features/notifications/presentation/cubit/notification_sync_cubit.dart';
 import '../../features/notifications/presentation/pages/settings_page.dart';
@@ -22,26 +24,39 @@ import '../di/injection.dart';
 
 part 'app_router.g.dart';
 
-@TypedGoRoute<HomeRoute>(path: '/')
+@TypedGoRoute<HomeRoute>(
+  path: '/',
+  routes: <TypedRoute>[
+    TypedGoRoute<CreateHonkRoute>(path: 'activities/create'),
+    TypedGoRoute<HonkDetailsRoute>(path: 'activities/:activityId'),
+    TypedGoRoute<FriendManagementRoute>(path: 'friends'),
+    TypedGoRoute<SettingsRoute>(path: 'settings'),
+  ],
+)
 class HomeRoute extends GoRouteData with $HomeRoute {
   const HomeRoute();
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (_) =>
-              getIt<HonkFeedBloc>()..add(const HonkFeedEvent.started()),
-        ),
-        BlocProvider(create: (_) => getIt<ActionPadCubit>()),
-      ],
-      child: const HomeDashboardPage(),
+    return BlocProvider(
+      create: (_) => getIt<HonkFeedBloc>()..add(const HonkFeedEvent.started()),
+      child: const HonkFeedPage(),
     );
   }
 }
 
-@TypedGoRoute<HonkDetailsRoute>(path: '/activities/:activityId')
+class CreateHonkRoute extends GoRouteData with $CreateHonkRoute {
+  const CreateHonkRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return BlocProvider(
+      create: (_) => getIt<CreateHonkCubit>(),
+      child: const CreateHonkPage(),
+    );
+  }
+}
+
 class HonkDetailsRoute extends GoRouteData with $HonkDetailsRoute {
   final String activityId;
 
@@ -49,29 +64,13 @@ class HonkDetailsRoute extends GoRouteData with $HonkDetailsRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    return HonkDetailsPage(
-      activityId: activityId,
-      honkRepository: getIt<IHonkRepository>(),
+    return BlocProvider(
+      create: (_) => getIt<HonkDetailsCubit>()..watch(activityId),
+      child: HonkDetailsPage(activityId: activityId),
     );
   }
 }
 
-@TypedGoRoute<InviteJoinRoute>(path: '/join/:inviteCode')
-class InviteJoinRoute extends GoRouteData with $InviteJoinRoute {
-  const InviteJoinRoute({required this.inviteCode});
-
-  final String inviteCode;
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) {
-    return InviteJoinPage(
-      inviteCode: inviteCode,
-      honkRepository: getIt<IHonkRepository>(),
-    );
-  }
-}
-
-@TypedGoRoute<FriendManagementRoute>(path: '/friends')
 class FriendManagementRoute extends GoRouteData with $FriendManagementRoute {
   const FriendManagementRoute();
 
@@ -84,7 +83,6 @@ class FriendManagementRoute extends GoRouteData with $FriendManagementRoute {
   }
 }
 
-@TypedGoRoute<SettingsRoute>(path: '/settings')
 class SettingsRoute extends GoRouteData with $SettingsRoute {
   const SettingsRoute();
 
@@ -93,6 +91,21 @@ class SettingsRoute extends GoRouteData with $SettingsRoute {
     return BlocProvider(
       create: (_) => getIt<NotificationSyncCubit>(),
       child: const SettingsPage(),
+    );
+  }
+}
+
+@TypedGoRoute<InviteJoinRoute>(path: '/join/:inviteCode')
+class InviteJoinRoute extends GoRouteData with $InviteJoinRoute {
+  const InviteJoinRoute({required this.inviteCode});
+
+  final String inviteCode;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return BlocProvider(
+      create: (_) => getIt<JoinHonkCubit>(),
+      child: InviteJoinPage(inviteCode: inviteCode),
     );
   }
 }

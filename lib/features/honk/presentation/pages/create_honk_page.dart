@@ -18,10 +18,6 @@ class _CreateHonkPageState extends State<CreateHonkPage> {
   final _locationController = TextEditingController();
   final _detailsController = TextEditingController();
 
-  // Timezone-aware start time: pick in local, store as UTC.
-  late DateTime _startsAtUtc;
-  String _recurrenceType = 'none';
-  final Set<int> _weeklyDays = {};
   int _statusResetSeconds = 1800;
 
   final List<_StatusOptionRow> _statusRows = [
@@ -31,12 +27,9 @@ class _CreateHonkPageState extends State<CreateHonkPage> {
   ];
   int _defaultStatusIndex = 0;
 
-  final Set<String> _selectedParticipantIds = {};
-
   @override
   void initState() {
     super.initState();
-    _startsAtUtc = DateTime.now().toUtc().add(const Duration(minutes: 15));
   }
 
   @override
@@ -50,43 +43,11 @@ class _CreateHonkPageState extends State<CreateHonkPage> {
     super.dispose();
   }
 
-  String get _deviceTimezone => DateTime.now().timeZoneName;
-
-  Future<void> _pickStartsAt() async {
-    final now = DateTime.now();
-    final currentLocal = _startsAtUtc.toLocal();
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: currentLocal,
-      firstDate: now.subtract(const Duration(days: 1)),
-      lastDate: now.add(const Duration(days: 365)),
-    );
-    if (pickedDate == null || !mounted) return;
-
-    final pickedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(currentLocal),
-    );
-    if (pickedTime == null || !mounted) return;
-
-    setState(() {
-      _startsAtUtc = DateTime(
-        pickedDate.year,
-        pickedDate.month,
-        pickedDate.day,
-        pickedTime.hour,
-        pickedTime.minute,
-      ).toUtc();
-    });
-  }
-
   void _submit() {
     if (_formKey.currentState?.validate() != true) return;
 
     final statusOptions = _buildStatusOptions();
     if (statusOptions == null) return;
-
-    final recurrenceRrule = _buildRecurrenceRrule();
 
     context.read<CreateHonkCubit>().createActivity(
       activity: _activityController.text.trim(),
@@ -94,12 +55,8 @@ class _CreateHonkPageState extends State<CreateHonkPage> {
       details: _detailsController.text.trim().isEmpty
           ? null
           : _detailsController.text.trim(),
-      startsAt: _startsAtUtc,
-      recurrenceRrule: recurrenceRrule,
-      recurrenceTimezone: _deviceTimezone,
       statusResetSeconds: _statusResetSeconds,
       statusOptions: statusOptions,
-      participantIds: _selectedParticipantIds.toList(growable: false),
     );
   }
 
@@ -138,43 +95,6 @@ class _CreateHonkPageState extends State<CreateHonkPage> {
       return null;
     }
     return options;
-  }
-
-  String? _buildRecurrenceRrule() {
-    switch (_recurrenceType) {
-      case 'daily':
-        return 'FREQ=DAILY';
-      case 'weekly':
-        final days = _weeklyDays.isEmpty
-            ? {_startsAtUtc.toLocal().weekday}
-            : _weeklyDays;
-        final byDay = days.map(_weekdayCode).join(',');
-        return 'FREQ=WEEKLY;BYDAY=$byDay';
-      default:
-        return null;
-    }
-  }
-
-  String _weekdayCode(int day) {
-    const codes = {
-      DateTime.monday: 'MO',
-      DateTime.tuesday: 'TU',
-      DateTime.wednesday: 'WE',
-      DateTime.thursday: 'TH',
-      DateTime.friday: 'FR',
-      DateTime.saturday: 'SA',
-      DateTime.sunday: 'SU',
-    };
-    return codes[day] ?? 'MO';
-  }
-
-  String _formatDateTime(DateTime utc) {
-    final local = utc.toLocal();
-    final m = local.month.toString().padLeft(2, '0');
-    final d = local.day.toString().padLeft(2, '0');
-    final h = local.hour.toString().padLeft(2, '0');
-    final min = local.minute.toString().padLeft(2, '0');
-    return '${local.year}-$m-$d $h:$min ($_deviceTimezone)';
   }
 
   void _showMessage(String msg) {
@@ -248,69 +168,6 @@ class _CreateHonkPageState extends State<CreateHonkPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // ── Start time ───────────────────────────────────────────
-                  _SectionTitle('Start time'),
-                  const SizedBox(height: 8),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.schedule_outlined),
-                    title: Text(_formatDateTime(_startsAtUtc)),
-                    trailing: TextButton(
-                      onPressed: isSubmitting ? null : _pickStartsAt,
-                      child: const Text('Change'),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // ── Recurrence ───────────────────────────────────────────
-                  _SectionTitle('Recurrence'),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    initialValue: _recurrenceType,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'none', child: Text('One-time')),
-                      DropdownMenuItem(value: 'daily', child: Text('Daily')),
-                      DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
-                    ],
-                    onChanged: isSubmitting
-                        ? null
-                        : (v) {
-                            if (v == null) return;
-                            setState(() => _recurrenceType = v);
-                          },
-                  ),
-                  if (_recurrenceType == 'weekly') ...[
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6,
-                      children: List.generate(7, (i) {
-                        final weekday = i + 1;
-                        return FilterChip(
-                          label: Text(
-                            _weekdayCode(weekday),
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          selected: _weeklyDays.contains(weekday),
-                          onSelected: isSubmitting
-                              ? null
-                              : (selected) {
-                                  setState(() {
-                                    if (selected) {
-                                      _weeklyDays.add(weekday);
-                                    } else {
-                                      _weeklyDays.remove(weekday);
-                                    }
-                                  });
-                                },
-                        );
-                      }),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-
                   // ── Status reset ─────────────────────────────────────────
                   _SectionTitle('Status resets after'),
                   const SizedBox(height: 8),
@@ -336,13 +193,6 @@ class _CreateHonkPageState extends State<CreateHonkPage> {
 
                   // ── Status options ───────────────────────────────────────
                   _buildStatusEditor(isSubmitting: isSubmitting),
-                  const SizedBox(height: 16),
-
-                  // ── Participants ─────────────────────────────────────────
-                  _buildParticipantPicker(
-                    state: state,
-                    isSubmitting: isSubmitting,
-                  ),
                   const SizedBox(height: 24),
 
                   // ── Submit ───────────────────────────────────────────────
@@ -461,63 +311,6 @@ class _CreateHonkPageState extends State<CreateHonkPage> {
             ),
           );
         }),
-      ],
-    );
-  }
-
-  Widget _buildParticipantPicker({
-    required CreateHonkState state,
-    required bool isSubmitting,
-  }) {
-    if (state.isLoadingParticipants) {
-      return const Row(
-        children: [
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          SizedBox(width: 8),
-          Text('Loading friends…'),
-        ],
-      );
-    }
-
-    final candidates = state.eligibleParticipants;
-    if (candidates.isEmpty) {
-      return const Text(
-        'No accepted friends to pre-invite. Share the invite code after creating.',
-        style: TextStyle(fontSize: 12),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionTitle('Invite friends (optional)'),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          children: candidates.map((c) {
-            final selected = _selectedParticipantIds.contains(c.id);
-            return FilterChip(
-              label: Text(c.username),
-              selected: selected,
-              onSelected: isSubmitting
-                  ? null
-                  : (v) {
-                      setState(() {
-                        if (v) {
-                          _selectedParticipantIds.add(c.id);
-                        } else {
-                          _selectedParticipantIds.remove(c.id);
-                        }
-                      });
-                    },
-            );
-          }).toList(),
-        ),
       ],
     );
   }

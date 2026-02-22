@@ -4,23 +4,15 @@ import '../../../../core/domain/main_failure.dart';
 import '../entities/honk_activity.dart';
 import '../entities/honk_activity_details.dart';
 import '../entities/honk_activity_summary.dart';
-import '../entities/honk_participant_candidate.dart';
 import '../entities/honk_status_option.dart';
 
 abstract class IHonkRepository {
-  TaskEither<MainFailure, List<HonkParticipantCandidate>>
-  fetchEligibleParticipants();
-
   TaskEither<MainFailure, HonkActivity> createActivity({
     required String activity,
     required String location,
     String? details,
-    required DateTime startsAt,
-    String? recurrenceRrule,
-    required String recurrenceTimezone,
     required int statusResetSeconds,
     required List<HonkStatusOption> statusOptions,
-    required List<String> participantIds,
   });
 
   TaskEither<MainFailure, HonkActivity> updateActivity({
@@ -28,9 +20,6 @@ abstract class IHonkRepository {
     required String activity,
     required String location,
     String? details,
-    required DateTime startsAt,
-    String? recurrenceRrule,
-    required String recurrenceTimezone,
     required int statusResetSeconds,
     required List<HonkStatusOption> statusOptions,
   });
@@ -39,14 +28,26 @@ abstract class IHonkRepository {
 
   TaskEither<MainFailure, String> rotateInvite({required String activityId});
 
-  TaskEither<MainFailure, String> joinByInviteCode({required String inviteCode});
+  /// Returns `(activityId, isPending)` where [isPending] means the request
+  /// is waiting for creator approval.
+  TaskEither<MainFailure, ({String activityId, bool isPending})>
+  joinByInviteCode({required String inviteCode});
 
   TaskEither<MainFailure, Unit> leaveActivity({required String activityId});
 
   TaskEither<MainFailure, Unit> setParticipantStatus({
     required String activityId,
     required String statusKey,
-    DateTime? occurrenceStart,
+  });
+
+  TaskEither<MainFailure, Unit> approveJoinRequest({
+    required String activityId,
+    required String userId,
+  });
+
+  TaskEither<MainFailure, Unit> denyJoinRequest({
+    required String activityId,
+    required String userId,
   });
 
   Stream<Either<MainFailure, List<HonkActivitySummary>>> watchActivities();

@@ -22,11 +22,6 @@ class HonkFeedPage extends StatelessWidget {
             onPressed: () => _showJoinSheet(context),
           ),
           IconButton(
-            tooltip: 'Friends',
-            icon: const Icon(Icons.group_outlined),
-            onPressed: () => const FriendManagementRoute().push(context),
-          ),
-          IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => const SettingsRoute().push(context),
@@ -99,7 +94,6 @@ class _ActivityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final schedule = _formatSchedule(activity);
 
     return ListTile(
       leading: CircleAvatar(
@@ -119,7 +113,7 @@ class _ActivityCard extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        '${activity.location} • $schedule',
+        activity.location,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -137,19 +131,6 @@ class _ActivityCard extends StatelessWidget {
       ),
       onTap: () => HonkDetailsRoute(activityId: activity.id).push(context),
     );
-  }
-
-  String _formatSchedule(HonkActivitySummary a) {
-    final startsAt = a.startsAt.toLocal();
-    final month = startsAt.month.toString().padLeft(2, '0');
-    final day = startsAt.day.toString().padLeft(2, '0');
-    final hour = startsAt.hour.toString().padLeft(2, '0');
-    final minute = startsAt.minute.toString().padLeft(2, '0');
-    final dateStr = '$month/$day $hour:$minute';
-    if (a.recurrenceRrule == null || a.recurrenceRrule!.trim().isEmpty) {
-      return dateStr;
-    }
-    return dateStr;
   }
 }
 
@@ -244,6 +225,14 @@ class _JoinByCodeSheetState extends State<_JoinByCodeSheet> {
         state.when(
           idle: () {},
           loading: () {},
+          pendingApproval: (activityId) {
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(widget.parentContext).showSnackBar(
+              const SnackBar(
+                content: Text('Join request sent! Waiting for approval.'),
+              ),
+            );
+          },
           success: (activityId) {
             Navigator.of(context).pop();
             HonkDetailsRoute(activityId: activityId).push(widget.parentContext);

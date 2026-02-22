@@ -12,6 +12,7 @@ abstract class HonkDetailsState with _$HonkDetailsState {
     @Default(false) bool isLeaving,
     @Default(false) bool isRotatingInvite,
     @Default(false) bool isUpdating,
+    @Default(<String>{}) Set<String> processingApprovalIds,
     String? rotatedInviteCode,
     MainFailure? actionError,
     @Default(false) bool wasDeleted,

@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$HonkActivitySummary {
 
- String get id; String get activity; String get location; String? get details; DateTime get startsAt; String? get recurrenceRrule; String get recurrenceTimezone; int get statusResetSeconds; String get defaultStatusKey; int get participantCount; bool get isCreator;
+ String get id; String get activity; String get location; String? get details; int get statusResetSeconds; String get defaultStatusKey; int get participantCount; bool get isCreator;
 /// Create a copy of HonkActivitySummary
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $HonkActivitySummaryCopyWith<HonkActivitySummary> get copyWith => _$HonkActivity
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HonkActivitySummary&&(identical(other.id, id) || other.id == id)&&(identical(other.activity, activity) || other.activity == activity)&&(identical(other.location, location) || other.location == location)&&(identical(other.details, details) || other.details == details)&&(identical(other.startsAt, startsAt) || other.startsAt == startsAt)&&(identical(other.recurrenceRrule, recurrenceRrule) || other.recurrenceRrule == recurrenceRrule)&&(identical(other.recurrenceTimezone, recurrenceTimezone) || other.recurrenceTimezone == recurrenceTimezone)&&(identical(other.statusResetSeconds, statusResetSeconds) || other.statusResetSeconds == statusResetSeconds)&&(identical(other.defaultStatusKey, defaultStatusKey) || other.defaultStatusKey == defaultStatusKey)&&(identical(other.participantCount, participantCount) || other.participantCount == participantCount)&&(identical(other.isCreator, isCreator) || other.isCreator == isCreator));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HonkActivitySummary&&(identical(other.id, id) || other.id == id)&&(identical(other.activity, activity) || other.activity == activity)&&(identical(other.location, location) || other.location == location)&&(identical(other.details, details) || other.details == details)&&(identical(other.statusResetSeconds, statusResetSeconds) || other.statusResetSeconds == statusResetSeconds)&&(identical(other.defaultStatusKey, defaultStatusKey) || other.defaultStatusKey == defaultStatusKey)&&(identical(other.participantCount, participantCount) || other.participantCount == participantCount)&&(identical(other.isCreator, isCreator) || other.isCreator == isCreator));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,activity,location,details,startsAt,recurrenceRrule,recurrenceTimezone,statusResetSeconds,defaultStatusKey,participantCount,isCreator);
+int get hashCode => Object.hash(runtimeType,id,activity,location,details,statusResetSeconds,defaultStatusKey,participantCount,isCreator);
 
 @override
 String toString() {
-  return 'HonkActivitySummary(id: $id, activity: $activity, location: $location, details: $details, startsAt: $startsAt, recurrenceRrule: $recurrenceRrule, recurrenceTimezone: $recurrenceTimezone, statusResetSeconds: $statusResetSeconds, defaultStatusKey: $defaultStatusKey, participantCount: $participantCount, isCreator: $isCreator)';
+  return 'HonkActivitySummary(id: $id, activity: $activity, location: $location, details: $details, statusResetSeconds: $statusResetSeconds, defaultStatusKey: $defaultStatusKey, participantCount: $participantCount, isCreator: $isCreator)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $HonkActivitySummaryCopyWith<$Res>  {
   factory $HonkActivitySummaryCopyWith(HonkActivitySummary value, $Res Function(HonkActivitySummary) _then) = _$HonkActivitySummaryCopyWithImpl;
 @useResult
 $Res call({
- String id, String activity, String location, String? details, DateTime startsAt, String? recurrenceRrule, String recurrenceTimezone, int statusResetSeconds, String defaultStatusKey, int participantCount, bool isCreator
+ String id, String activity, String location, String? details, int statusResetSeconds, String defaultStatusKey, int participantCount, bool isCreator
 });
 
 
@@ -62,16 +62,13 @@ class _$HonkActivitySummaryCopyWithImpl<$Res>
 
 /// Create a copy of HonkActivitySummary
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? activity = null,Object? location = null,Object? details = freezed,Object? startsAt = null,Object? recurrenceRrule = freezed,Object? recurrenceTimezone = null,Object? statusResetSeconds = null,Object? defaultStatusKey = null,Object? participantCount = null,Object? isCreator = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? activity = null,Object? location = null,Object? details = freezed,Object? statusResetSeconds = null,Object? defaultStatusKey = null,Object? participantCount = null,Object? isCreator = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,activity: null == activity ? _self.activity : activity // ignore: cast_nullable_to_non_nullable
 as String,location: null == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
 as String,details: freezed == details ? _self.details : details // ignore: cast_nullable_to_non_nullable
-as String?,startsAt: null == startsAt ? _self.startsAt : startsAt // ignore: cast_nullable_to_non_nullable
-as DateTime,recurrenceRrule: freezed == recurrenceRrule ? _self.recurrenceRrule : recurrenceRrule // ignore: cast_nullable_to_non_nullable
-as String?,recurrenceTimezone: null == recurrenceTimezone ? _self.recurrenceTimezone : recurrenceTimezone // ignore: cast_nullable_to_non_nullable
-as String,statusResetSeconds: null == statusResetSeconds ? _self.statusResetSeconds : statusResetSeconds // ignore: cast_nullable_to_non_nullable
+as String?,statusResetSeconds: null == statusResetSeconds ? _self.statusResetSeconds : statusResetSeconds // ignore: cast_nullable_to_non_nullable
 as int,defaultStatusKey: null == defaultStatusKey ? _self.defaultStatusKey : defaultStatusKey // ignore: cast_nullable_to_non_nullable
 as String,participantCount: null == participantCount ? _self.participantCount : participantCount // ignore: cast_nullable_to_non_nullable
 as int,isCreator: null == isCreator ? _self.isCreator : isCreator // ignore: cast_nullable_to_non_nullable
@@ -160,10 +157,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String activity,  String location,  String? details,  DateTime startsAt,  String? recurrenceRrule,  String recurrenceTimezone,  int statusResetSeconds,  String defaultStatusKey,  int participantCount,  bool isCreator)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String activity,  String location,  String? details,  int statusResetSeconds,  String defaultStatusKey,  int participantCount,  bool isCreator)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _HonkActivitySummary() when $default != null:
-return $default(_that.id,_that.activity,_that.location,_that.details,_that.startsAt,_that.recurrenceRrule,_that.recurrenceTimezone,_that.statusResetSeconds,_that.defaultStatusKey,_that.participantCount,_that.isCreator);case _:
+return $default(_that.id,_that.activity,_that.location,_that.details,_that.statusResetSeconds,_that.defaultStatusKey,_that.participantCount,_that.isCreator);case _:
   return orElse();
 
 }
@@ -181,10 +178,10 @@ return $default(_that.id,_that.activity,_that.location,_that.details,_that.start
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String activity,  String location,  String? details,  DateTime startsAt,  String? recurrenceRrule,  String recurrenceTimezone,  int statusResetSeconds,  String defaultStatusKey,  int participantCount,  bool isCreator)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String activity,  String location,  String? details,  int statusResetSeconds,  String defaultStatusKey,  int participantCount,  bool isCreator)  $default,) {final _that = this;
 switch (_that) {
 case _HonkActivitySummary():
-return $default(_that.id,_that.activity,_that.location,_that.details,_that.startsAt,_that.recurrenceRrule,_that.recurrenceTimezone,_that.statusResetSeconds,_that.defaultStatusKey,_that.participantCount,_that.isCreator);case _:
+return $default(_that.id,_that.activity,_that.location,_that.details,_that.statusResetSeconds,_that.defaultStatusKey,_that.participantCount,_that.isCreator);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +198,10 @@ return $default(_that.id,_that.activity,_that.location,_that.details,_that.start
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String activity,  String location,  String? details,  DateTime startsAt,  String? recurrenceRrule,  String recurrenceTimezone,  int statusResetSeconds,  String defaultStatusKey,  int participantCount,  bool isCreator)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String activity,  String location,  String? details,  int statusResetSeconds,  String defaultStatusKey,  int participantCount,  bool isCreator)?  $default,) {final _that = this;
 switch (_that) {
 case _HonkActivitySummary() when $default != null:
-return $default(_that.id,_that.activity,_that.location,_that.details,_that.startsAt,_that.recurrenceRrule,_that.recurrenceTimezone,_that.statusResetSeconds,_that.defaultStatusKey,_that.participantCount,_that.isCreator);case _:
+return $default(_that.id,_that.activity,_that.location,_that.details,_that.statusResetSeconds,_that.defaultStatusKey,_that.participantCount,_that.isCreator);case _:
   return null;
 
 }
@@ -216,16 +213,13 @@ return $default(_that.id,_that.activity,_that.location,_that.details,_that.start
 
 
 class _HonkActivitySummary implements HonkActivitySummary {
-  const _HonkActivitySummary({required this.id, required this.activity, required this.location, this.details, required this.startsAt, this.recurrenceRrule, required this.recurrenceTimezone, required this.statusResetSeconds, required this.defaultStatusKey, required this.participantCount, required this.isCreator});
+  const _HonkActivitySummary({required this.id, required this.activity, required this.location, this.details, required this.statusResetSeconds, required this.defaultStatusKey, required this.participantCount, required this.isCreator});
   
 
 @override final  String id;
 @override final  String activity;
 @override final  String location;
 @override final  String? details;
-@override final  DateTime startsAt;
-@override final  String? recurrenceRrule;
-@override final  String recurrenceTimezone;
 @override final  int statusResetSeconds;
 @override final  String defaultStatusKey;
 @override final  int participantCount;
@@ -241,16 +235,16 @@ _$HonkActivitySummaryCopyWith<_HonkActivitySummary> get copyWith => __$HonkActiv
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HonkActivitySummary&&(identical(other.id, id) || other.id == id)&&(identical(other.activity, activity) || other.activity == activity)&&(identical(other.location, location) || other.location == location)&&(identical(other.details, details) || other.details == details)&&(identical(other.startsAt, startsAt) || other.startsAt == startsAt)&&(identical(other.recurrenceRrule, recurrenceRrule) || other.recurrenceRrule == recurrenceRrule)&&(identical(other.recurrenceTimezone, recurrenceTimezone) || other.recurrenceTimezone == recurrenceTimezone)&&(identical(other.statusResetSeconds, statusResetSeconds) || other.statusResetSeconds == statusResetSeconds)&&(identical(other.defaultStatusKey, defaultStatusKey) || other.defaultStatusKey == defaultStatusKey)&&(identical(other.participantCount, participantCount) || other.participantCount == participantCount)&&(identical(other.isCreator, isCreator) || other.isCreator == isCreator));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HonkActivitySummary&&(identical(other.id, id) || other.id == id)&&(identical(other.activity, activity) || other.activity == activity)&&(identical(other.location, location) || other.location == location)&&(identical(other.details, details) || other.details == details)&&(identical(other.statusResetSeconds, statusResetSeconds) || other.statusResetSeconds == statusResetSeconds)&&(identical(other.defaultStatusKey, defaultStatusKey) || other.defaultStatusKey == defaultStatusKey)&&(identical(other.participantCount, participantCount) || other.participantCount == participantCount)&&(identical(other.isCreator, isCreator) || other.isCreator == isCreator));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,activity,location,details,startsAt,recurrenceRrule,recurrenceTimezone,statusResetSeconds,defaultStatusKey,participantCount,isCreator);
+int get hashCode => Object.hash(runtimeType,id,activity,location,details,statusResetSeconds,defaultStatusKey,participantCount,isCreator);
 
 @override
 String toString() {
-  return 'HonkActivitySummary(id: $id, activity: $activity, location: $location, details: $details, startsAt: $startsAt, recurrenceRrule: $recurrenceRrule, recurrenceTimezone: $recurrenceTimezone, statusResetSeconds: $statusResetSeconds, defaultStatusKey: $defaultStatusKey, participantCount: $participantCount, isCreator: $isCreator)';
+  return 'HonkActivitySummary(id: $id, activity: $activity, location: $location, details: $details, statusResetSeconds: $statusResetSeconds, defaultStatusKey: $defaultStatusKey, participantCount: $participantCount, isCreator: $isCreator)';
 }
 
 
@@ -261,7 +255,7 @@ abstract mixin class _$HonkActivitySummaryCopyWith<$Res> implements $HonkActivit
   factory _$HonkActivitySummaryCopyWith(_HonkActivitySummary value, $Res Function(_HonkActivitySummary) _then) = __$HonkActivitySummaryCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String activity, String location, String? details, DateTime startsAt, String? recurrenceRrule, String recurrenceTimezone, int statusResetSeconds, String defaultStatusKey, int participantCount, bool isCreator
+ String id, String activity, String location, String? details, int statusResetSeconds, String defaultStatusKey, int participantCount, bool isCreator
 });
 
 
@@ -278,16 +272,13 @@ class __$HonkActivitySummaryCopyWithImpl<$Res>
 
 /// Create a copy of HonkActivitySummary
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? activity = null,Object? location = null,Object? details = freezed,Object? startsAt = null,Object? recurrenceRrule = freezed,Object? recurrenceTimezone = null,Object? statusResetSeconds = null,Object? defaultStatusKey = null,Object? participantCount = null,Object? isCreator = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? activity = null,Object? location = null,Object? details = freezed,Object? statusResetSeconds = null,Object? defaultStatusKey = null,Object? participantCount = null,Object? isCreator = null,}) {
   return _then(_HonkActivitySummary(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,activity: null == activity ? _self.activity : activity // ignore: cast_nullable_to_non_nullable
 as String,location: null == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
 as String,details: freezed == details ? _self.details : details // ignore: cast_nullable_to_non_nullable
-as String?,startsAt: null == startsAt ? _self.startsAt : startsAt // ignore: cast_nullable_to_non_nullable
-as DateTime,recurrenceRrule: freezed == recurrenceRrule ? _self.recurrenceRrule : recurrenceRrule // ignore: cast_nullable_to_non_nullable
-as String?,recurrenceTimezone: null == recurrenceTimezone ? _self.recurrenceTimezone : recurrenceTimezone // ignore: cast_nullable_to_non_nullable
-as String,statusResetSeconds: null == statusResetSeconds ? _self.statusResetSeconds : statusResetSeconds // ignore: cast_nullable_to_non_nullable
+as String?,statusResetSeconds: null == statusResetSeconds ? _self.statusResetSeconds : statusResetSeconds // ignore: cast_nullable_to_non_nullable
 as int,defaultStatusKey: null == defaultStatusKey ? _self.defaultStatusKey : defaultStatusKey // ignore: cast_nullable_to_non_nullable
 as String,participantCount: null == participantCount ? _self.participantCount : participantCount // ignore: cast_nullable_to_non_nullable
 as int,isCreator: null == isCreator ? _self.isCreator : isCreator // ignore: cast_nullable_to_non_nullable

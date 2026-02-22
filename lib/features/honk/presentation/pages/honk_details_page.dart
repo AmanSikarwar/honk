@@ -201,6 +201,14 @@ class _DetailsScaffold extends StatelessWidget {
         children: [
           _ActivityInfoCard(activity: activity),
           const SizedBox(height: 16),
+          if (isCreator && details.pendingParticipants.isNotEmpty) ...[
+            _PendingRequestsCard(
+              pendingParticipants: details.pendingParticipants,
+              activityId: activityId,
+              processingIds: state.processingApprovalIds,
+            ),
+            const SizedBox(height: 16),
+          ],
           _ParticipantsList(
             participants: details.participants,
             statusOptions: details.statusOptions,
@@ -287,10 +295,6 @@ class _ActivityInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final schedule = activity.recurrenceRrule != null
-        ? '${_parseRecurrence(activity.recurrenceRrule!)} starting ${_fmtLocal(activity.startsAt)}'
-        : 'One-time on ${_fmtLocal(activity.startsAt)}';
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -298,8 +302,6 @@ class _ActivityInfoCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _InfoRow(icon: Icons.place_outlined, text: activity.location),
-            const SizedBox(height: 8),
-            _InfoRow(icon: Icons.schedule, text: schedule),
             if (activity.details != null && activity.details!.isNotEmpty) ...[
               const SizedBox(height: 8),
               _InfoRow(icon: Icons.info_outline, text: activity.details!),
@@ -314,21 +316,6 @@ class _ActivityInfoCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _fmtLocal(DateTime utc) {
-    final l = utc.toLocal();
-    final m = l.month.toString().padLeft(2, '0');
-    final d = l.day.toString().padLeft(2, '0');
-    final h = l.hour.toString().padLeft(2, '0');
-    final min = l.minute.toString().padLeft(2, '0');
-    return '${l.year}-$m-$d $h:$min';
-  }
-
-  String _parseRecurrence(String rrule) {
-    if (rrule.startsWith('FREQ=DAILY')) return 'Daily';
-    if (rrule.startsWith('FREQ=WEEKLY')) return 'Weekly';
-    return rrule;
   }
 
   String _formatReset(int seconds) {
@@ -353,6 +340,91 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(child: Text(text)),
       ],
+    );
+  }
+}
+
+// ── Pending requests card ─────────────────────────────────────────────────────
+
+class _PendingRequestsCard extends StatelessWidget {
+  const _PendingRequestsCard({
+    required this.pendingParticipants,
+    required this.activityId,
+    required this.processingIds,
+  });
+
+  final List<HonkParticipant> pendingParticipants;
+  final String activityId;
+  final Set<String> processingIds;
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<HonkDetailsCubit>();
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Join requests',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          ...pendingParticipants.map((p) {
+            final processing = processingIds.contains(p.userId);
+            final displayName = p.fullName ?? p.username;
+            final initials = displayName.isNotEmpty
+                ? displayName[0].toUpperCase()
+                : '?';
+            return ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHigh,
+                backgroundImage: p.profileUrl != null
+                    ? NetworkImage(p.profileUrl!)
+                    : null,
+                onBackgroundImageError: p.profileUrl != null ? (_, _) {} : null,
+                child: p.profileUrl == null
+                    ? Text(
+                        initials,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      )
+                    : null,
+              ),
+              title: Text(displayName),
+              trailing: processing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Approve',
+                          icon: const Icon(
+                            Icons.check_circle_outline,
+                            color: Colors.green,
+                          ),
+                          onPressed: () => cubit.approveJoinRequest(p.userId),
+                        ),
+                        IconButton(
+                          tooltip: 'Deny',
+                          icon: const Icon(
+                            Icons.cancel_outlined,
+                            color: Colors.red,
+                          ),
+                          onPressed: () => cubit.denyJoinRequest(p.userId),
+                        ),
+                      ],
+                    ),
+            );
+          }),
+        ],
+      ),
     );
   }
 }
@@ -514,7 +586,6 @@ class _HonkFab extends StatelessWidget {
         child: _StatusPickerSheet(
           statusOptions: details.statusOptions,
           currentStatusKey: currentParticipant?.effectiveStatusKey,
-          occurrenceStart: details.occurrenceStart,
           activityId: activityId,
         ),
       ),
@@ -526,13 +597,11 @@ class _StatusPickerSheet extends StatelessWidget {
   const _StatusPickerSheet({
     required this.statusOptions,
     required this.currentStatusKey,
-    required this.occurrenceStart,
     required this.activityId,
   });
 
   final List<HonkStatusOption> statusOptions;
   final String? currentStatusKey;
-  final DateTime occurrenceStart;
   final String activityId;
 
   @override
@@ -571,7 +640,6 @@ class _StatusPickerSheet extends StatelessWidget {
                     Navigator.of(context).pop();
                     context.read<HonkDetailsCubit>().setStatus(
                       activityId: activityId,
-                      occurrenceStart: occurrenceStart,
                       statusKey: option.statusKey,
                     );
                   },
@@ -736,9 +804,6 @@ class _EditHonkDialogState extends State<_EditHonkDialog> {
   late final TextEditingController _locationCtrl;
   late final TextEditingController _detailsCtrl;
 
-  late DateTime _startsAtUtc;
-  late String _recurrenceType;
-  final Set<int> _weeklyDays = {};
   late int _statusResetSeconds;
   late final List<_EditStatusRow> _statusRows;
   late int _defaultStatusIndex;
@@ -750,36 +815,7 @@ class _EditHonkDialogState extends State<_EditHonkDialog> {
     _activityCtrl = TextEditingController(text: a.activity);
     _locationCtrl = TextEditingController(text: a.location);
     _detailsCtrl = TextEditingController(text: a.details ?? '');
-    _startsAtUtc = a.startsAt;
     _statusResetSeconds = a.statusResetSeconds;
-
-    // Parse recurrence rrule.
-    final rrule = a.recurrenceRrule;
-    if (rrule == null || rrule.isEmpty) {
-      _recurrenceType = 'none';
-    } else if (rrule.startsWith('FREQ=DAILY')) {
-      _recurrenceType = 'daily';
-    } else if (rrule.startsWith('FREQ=WEEKLY')) {
-      _recurrenceType = 'weekly';
-      final byDayMatch = RegExp(r'BYDAY=([^;]+)').firstMatch(rrule);
-      if (byDayMatch != null) {
-        for (final code in byDayMatch.group(1)!.split(',')) {
-          const dayMap = {
-            'MO': DateTime.monday,
-            'TU': DateTime.tuesday,
-            'WE': DateTime.wednesday,
-            'TH': DateTime.thursday,
-            'FR': DateTime.friday,
-            'SA': DateTime.saturday,
-            'SU': DateTime.sunday,
-          };
-          final day = dayMap[code.trim()];
-          if (day != null) _weeklyDays.add(day);
-        }
-      }
-    } else {
-      _recurrenceType = 'none';
-    }
 
     // Status options
     final options = widget.details.statusOptions;
@@ -799,54 +835,6 @@ class _EditHonkDialogState extends State<_EditHonkDialog> {
       r.dispose();
     }
     super.dispose();
-  }
-
-  String _weekdayCode(int day) {
-    const codes = {
-      DateTime.monday: 'MO',
-      DateTime.tuesday: 'TU',
-      DateTime.wednesday: 'WE',
-      DateTime.thursday: 'TH',
-      DateTime.friday: 'FR',
-      DateTime.saturday: 'SA',
-      DateTime.sunday: 'SU',
-    };
-    return codes[day] ?? 'MO';
-  }
-
-  String _formatDateTime(DateTime utc) {
-    final l = utc.toLocal();
-    final m = l.month.toString().padLeft(2, '0');
-    final d = l.day.toString().padLeft(2, '0');
-    final h = l.hour.toString().padLeft(2, '0');
-    final min = l.minute.toString().padLeft(2, '0');
-    return '${l.year}-$m-$d $h:$min';
-  }
-
-  Future<void> _pickStartsAt() async {
-    final now = DateTime.now();
-    final local = _startsAtUtc.toLocal();
-    final date = await showDatePicker(
-      context: context,
-      initialDate: local,
-      firstDate: now.subtract(const Duration(days: 1)),
-      lastDate: now.add(const Duration(days: 365)),
-    );
-    if (date == null || !mounted) return;
-    final time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(local),
-    );
-    if (time == null || !mounted) return;
-    setState(() {
-      _startsAtUtc = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      ).toUtc();
-    });
   }
 
   List<HonkStatusOption>? _buildStatusOptions() {
@@ -873,21 +861,6 @@ class _EditHonkDialogState extends State<_EditHonkDialog> {
     return options;
   }
 
-  String? _buildRecurrenceRrule() {
-    switch (_recurrenceType) {
-      case 'daily':
-        return 'FREQ=DAILY';
-      case 'weekly':
-        final days = _weeklyDays.isEmpty
-            ? {_startsAtUtc.toLocal().weekday}
-            : _weeklyDays;
-        final byDay = days.map(_weekdayCode).join(',');
-        return 'FREQ=WEEKLY;BYDAY=$byDay';
-      default:
-        return null;
-    }
-  }
-
   void _save() {
     if (_formKey.currentState?.validate() != true) return;
     final opts = _buildStatusOptions();
@@ -905,9 +878,6 @@ class _EditHonkDialogState extends State<_EditHonkDialog> {
       details: _detailsCtrl.text.trim().isEmpty
           ? null
           : _detailsCtrl.text.trim(),
-      startsAt: _startsAtUtc,
-      recurrenceRrule: _buildRecurrenceRrule(),
-      recurrenceTimezone: widget.details.activity.recurrenceTimezone,
       statusResetSeconds: _statusResetSeconds,
       statusOptions: opts,
     );
@@ -944,47 +914,6 @@ class _EditHonkDialogState extends State<_EditHonkDialog> {
               maxLines: 2,
             ),
             const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Starts at'),
-              subtitle: Text(_formatDateTime(_startsAtUtc)),
-              trailing: TextButton(
-                onPressed: _pickStartsAt,
-                child: const Text('Change'),
-              ),
-            ),
-            DropdownButtonFormField<String>(
-              initialValue: _recurrenceType,
-              decoration: const InputDecoration(labelText: 'Recurrence'),
-              items: const [
-                DropdownMenuItem(value: 'none', child: Text('One-time')),
-                DropdownMenuItem(value: 'daily', child: Text('Daily')),
-                DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
-              ],
-              onChanged: (v) {
-                if (v != null) setState(() => _recurrenceType = v);
-              },
-            ),
-            if (_recurrenceType == 'weekly') ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                children: List.generate(7, (i) {
-                  final wd = i + 1;
-                  return FilterChip(
-                    label: Text(_weekdayCode(wd)),
-                    selected: _weeklyDays.contains(wd),
-                    onSelected: (s) => setState(() {
-                      if (s) {
-                        _weeklyDays.add(wd);
-                      } else {
-                        _weeklyDays.remove(wd);
-                      }
-                    }),
-                  );
-                }),
-              ),
-            ],
             DropdownButtonFormField<int>(
               initialValue: _statusResetSeconds,
               decoration: const InputDecoration(

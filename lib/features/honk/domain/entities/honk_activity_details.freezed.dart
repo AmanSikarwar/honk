@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$HonkActivityDetails {
 
- HonkActivity get activity; DateTime get occurrenceStart; List<HonkStatusOption> get statusOptions; List<HonkParticipant> get participants; String get currentUserId;
+ HonkActivity get activity; List<HonkStatusOption> get statusOptions; List<HonkParticipant> get participants; List<HonkParticipant> get pendingParticipants; String get currentUserId;
 /// Create a copy of HonkActivityDetails
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $HonkActivityDetailsCopyWith<HonkActivityDetails> get copyWith => _$HonkActivity
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HonkActivityDetails&&(identical(other.activity, activity) || other.activity == activity)&&(identical(other.occurrenceStart, occurrenceStart) || other.occurrenceStart == occurrenceStart)&&const DeepCollectionEquality().equals(other.statusOptions, statusOptions)&&const DeepCollectionEquality().equals(other.participants, participants)&&(identical(other.currentUserId, currentUserId) || other.currentUserId == currentUserId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HonkActivityDetails&&(identical(other.activity, activity) || other.activity == activity)&&const DeepCollectionEquality().equals(other.statusOptions, statusOptions)&&const DeepCollectionEquality().equals(other.participants, participants)&&const DeepCollectionEquality().equals(other.pendingParticipants, pendingParticipants)&&(identical(other.currentUserId, currentUserId) || other.currentUserId == currentUserId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,activity,occurrenceStart,const DeepCollectionEquality().hash(statusOptions),const DeepCollectionEquality().hash(participants),currentUserId);
+int get hashCode => Object.hash(runtimeType,activity,const DeepCollectionEquality().hash(statusOptions),const DeepCollectionEquality().hash(participants),const DeepCollectionEquality().hash(pendingParticipants),currentUserId);
 
 @override
 String toString() {
-  return 'HonkActivityDetails(activity: $activity, occurrenceStart: $occurrenceStart, statusOptions: $statusOptions, participants: $participants, currentUserId: $currentUserId)';
+  return 'HonkActivityDetails(activity: $activity, statusOptions: $statusOptions, participants: $participants, pendingParticipants: $pendingParticipants, currentUserId: $currentUserId)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $HonkActivityDetailsCopyWith<$Res>  {
   factory $HonkActivityDetailsCopyWith(HonkActivityDetails value, $Res Function(HonkActivityDetails) _then) = _$HonkActivityDetailsCopyWithImpl;
 @useResult
 $Res call({
- HonkActivity activity, DateTime occurrenceStart, List<HonkStatusOption> statusOptions, List<HonkParticipant> participants, String currentUserId
+ HonkActivity activity, List<HonkStatusOption> statusOptions, List<HonkParticipant> participants, List<HonkParticipant> pendingParticipants, String currentUserId
 });
 
 
@@ -62,12 +62,12 @@ class _$HonkActivityDetailsCopyWithImpl<$Res>
 
 /// Create a copy of HonkActivityDetails
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? activity = null,Object? occurrenceStart = null,Object? statusOptions = null,Object? participants = null,Object? currentUserId = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? activity = null,Object? statusOptions = null,Object? participants = null,Object? pendingParticipants = null,Object? currentUserId = null,}) {
   return _then(_self.copyWith(
 activity: null == activity ? _self.activity : activity // ignore: cast_nullable_to_non_nullable
-as HonkActivity,occurrenceStart: null == occurrenceStart ? _self.occurrenceStart : occurrenceStart // ignore: cast_nullable_to_non_nullable
-as DateTime,statusOptions: null == statusOptions ? _self.statusOptions : statusOptions // ignore: cast_nullable_to_non_nullable
+as HonkActivity,statusOptions: null == statusOptions ? _self.statusOptions : statusOptions // ignore: cast_nullable_to_non_nullable
 as List<HonkStatusOption>,participants: null == participants ? _self.participants : participants // ignore: cast_nullable_to_non_nullable
+as List<HonkParticipant>,pendingParticipants: null == pendingParticipants ? _self.pendingParticipants : pendingParticipants // ignore: cast_nullable_to_non_nullable
 as List<HonkParticipant>,currentUserId: null == currentUserId ? _self.currentUserId : currentUserId // ignore: cast_nullable_to_non_nullable
 as String,
   ));
@@ -163,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( HonkActivity activity,  DateTime occurrenceStart,  List<HonkStatusOption> statusOptions,  List<HonkParticipant> participants,  String currentUserId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( HonkActivity activity,  List<HonkStatusOption> statusOptions,  List<HonkParticipant> participants,  List<HonkParticipant> pendingParticipants,  String currentUserId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _HonkActivityDetails() when $default != null:
-return $default(_that.activity,_that.occurrenceStart,_that.statusOptions,_that.participants,_that.currentUserId);case _:
+return $default(_that.activity,_that.statusOptions,_that.participants,_that.pendingParticipants,_that.currentUserId);case _:
   return orElse();
 
 }
@@ -184,10 +184,10 @@ return $default(_that.activity,_that.occurrenceStart,_that.statusOptions,_that.p
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( HonkActivity activity,  DateTime occurrenceStart,  List<HonkStatusOption> statusOptions,  List<HonkParticipant> participants,  String currentUserId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( HonkActivity activity,  List<HonkStatusOption> statusOptions,  List<HonkParticipant> participants,  List<HonkParticipant> pendingParticipants,  String currentUserId)  $default,) {final _that = this;
 switch (_that) {
 case _HonkActivityDetails():
-return $default(_that.activity,_that.occurrenceStart,_that.statusOptions,_that.participants,_that.currentUserId);case _:
+return $default(_that.activity,_that.statusOptions,_that.participants,_that.pendingParticipants,_that.currentUserId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +204,10 @@ return $default(_that.activity,_that.occurrenceStart,_that.statusOptions,_that.p
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( HonkActivity activity,  DateTime occurrenceStart,  List<HonkStatusOption> statusOptions,  List<HonkParticipant> participants,  String currentUserId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( HonkActivity activity,  List<HonkStatusOption> statusOptions,  List<HonkParticipant> participants,  List<HonkParticipant> pendingParticipants,  String currentUserId)?  $default,) {final _that = this;
 switch (_that) {
 case _HonkActivityDetails() when $default != null:
-return $default(_that.activity,_that.occurrenceStart,_that.statusOptions,_that.participants,_that.currentUserId);case _:
+return $default(_that.activity,_that.statusOptions,_that.participants,_that.pendingParticipants,_that.currentUserId);case _:
   return null;
 
 }
@@ -219,11 +219,10 @@ return $default(_that.activity,_that.occurrenceStart,_that.statusOptions,_that.p
 
 
 class _HonkActivityDetails extends HonkActivityDetails {
-  const _HonkActivityDetails({required this.activity, required this.occurrenceStart, required final  List<HonkStatusOption> statusOptions, required final  List<HonkParticipant> participants, required this.currentUserId}): _statusOptions = statusOptions,_participants = participants,super._();
+  const _HonkActivityDetails({required this.activity, required final  List<HonkStatusOption> statusOptions, required final  List<HonkParticipant> participants, final  List<HonkParticipant> pendingParticipants = const <HonkParticipant>[], required this.currentUserId}): _statusOptions = statusOptions,_participants = participants,_pendingParticipants = pendingParticipants,super._();
   
 
 @override final  HonkActivity activity;
-@override final  DateTime occurrenceStart;
  final  List<HonkStatusOption> _statusOptions;
 @override List<HonkStatusOption> get statusOptions {
   if (_statusOptions is EqualUnmodifiableListView) return _statusOptions;
@@ -238,6 +237,13 @@ class _HonkActivityDetails extends HonkActivityDetails {
   return EqualUnmodifiableListView(_participants);
 }
 
+ final  List<HonkParticipant> _pendingParticipants;
+@override@JsonKey() List<HonkParticipant> get pendingParticipants {
+  if (_pendingParticipants is EqualUnmodifiableListView) return _pendingParticipants;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_pendingParticipants);
+}
+
 @override final  String currentUserId;
 
 /// Create a copy of HonkActivityDetails
@@ -250,16 +256,16 @@ _$HonkActivityDetailsCopyWith<_HonkActivityDetails> get copyWith => __$HonkActiv
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HonkActivityDetails&&(identical(other.activity, activity) || other.activity == activity)&&(identical(other.occurrenceStart, occurrenceStart) || other.occurrenceStart == occurrenceStart)&&const DeepCollectionEquality().equals(other._statusOptions, _statusOptions)&&const DeepCollectionEquality().equals(other._participants, _participants)&&(identical(other.currentUserId, currentUserId) || other.currentUserId == currentUserId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HonkActivityDetails&&(identical(other.activity, activity) || other.activity == activity)&&const DeepCollectionEquality().equals(other._statusOptions, _statusOptions)&&const DeepCollectionEquality().equals(other._participants, _participants)&&const DeepCollectionEquality().equals(other._pendingParticipants, _pendingParticipants)&&(identical(other.currentUserId, currentUserId) || other.currentUserId == currentUserId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,activity,occurrenceStart,const DeepCollectionEquality().hash(_statusOptions),const DeepCollectionEquality().hash(_participants),currentUserId);
+int get hashCode => Object.hash(runtimeType,activity,const DeepCollectionEquality().hash(_statusOptions),const DeepCollectionEquality().hash(_participants),const DeepCollectionEquality().hash(_pendingParticipants),currentUserId);
 
 @override
 String toString() {
-  return 'HonkActivityDetails(activity: $activity, occurrenceStart: $occurrenceStart, statusOptions: $statusOptions, participants: $participants, currentUserId: $currentUserId)';
+  return 'HonkActivityDetails(activity: $activity, statusOptions: $statusOptions, participants: $participants, pendingParticipants: $pendingParticipants, currentUserId: $currentUserId)';
 }
 
 
@@ -270,7 +276,7 @@ abstract mixin class _$HonkActivityDetailsCopyWith<$Res> implements $HonkActivit
   factory _$HonkActivityDetailsCopyWith(_HonkActivityDetails value, $Res Function(_HonkActivityDetails) _then) = __$HonkActivityDetailsCopyWithImpl;
 @override @useResult
 $Res call({
- HonkActivity activity, DateTime occurrenceStart, List<HonkStatusOption> statusOptions, List<HonkParticipant> participants, String currentUserId
+ HonkActivity activity, List<HonkStatusOption> statusOptions, List<HonkParticipant> participants, List<HonkParticipant> pendingParticipants, String currentUserId
 });
 
 
@@ -287,12 +293,12 @@ class __$HonkActivityDetailsCopyWithImpl<$Res>
 
 /// Create a copy of HonkActivityDetails
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? activity = null,Object? occurrenceStart = null,Object? statusOptions = null,Object? participants = null,Object? currentUserId = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? activity = null,Object? statusOptions = null,Object? participants = null,Object? pendingParticipants = null,Object? currentUserId = null,}) {
   return _then(_HonkActivityDetails(
 activity: null == activity ? _self.activity : activity // ignore: cast_nullable_to_non_nullable
-as HonkActivity,occurrenceStart: null == occurrenceStart ? _self.occurrenceStart : occurrenceStart // ignore: cast_nullable_to_non_nullable
-as DateTime,statusOptions: null == statusOptions ? _self._statusOptions : statusOptions // ignore: cast_nullable_to_non_nullable
+as HonkActivity,statusOptions: null == statusOptions ? _self._statusOptions : statusOptions // ignore: cast_nullable_to_non_nullable
 as List<HonkStatusOption>,participants: null == participants ? _self._participants : participants // ignore: cast_nullable_to_non_nullable
+as List<HonkParticipant>,pendingParticipants: null == pendingParticipants ? _self._pendingParticipants : pendingParticipants // ignore: cast_nullable_to_non_nullable
 as List<HonkParticipant>,currentUserId: null == currentUserId ? _self.currentUserId : currentUserId // ignore: cast_nullable_to_non_nullable
 as String,
   ));

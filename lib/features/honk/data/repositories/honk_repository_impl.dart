@@ -6,44 +6,26 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/data/failure_mapper.dart';
 import '../../../../core/domain/main_failure.dart';
-import '../../../friends/domain/repositories/i_friend_repository.dart';
 import '../../domain/entities/honk_activity.dart';
 import '../../domain/entities/honk_activity_details.dart';
 import '../../domain/entities/honk_activity_summary.dart';
 import '../../domain/entities/honk_participant.dart';
-import '../../domain/entities/honk_participant_candidate.dart';
 import '../../domain/entities/honk_status_option.dart';
 import '../../domain/repositories/i_honk_repository.dart';
-import '../../domain/services/honk_recurrence_service.dart';
 import '../models/honk_activity_model.dart';
 import '../models/honk_participant_model.dart';
 import '../models/honk_status_option_model.dart';
 
 @LazySingleton(as: IHonkRepository)
 class HonkRepositoryImpl implements IHonkRepository {
-  HonkRepositoryImpl(this._supabase, this._friendRepository);
+  HonkRepositoryImpl(this._supabase);
 
   final SupabaseClient _supabase;
-  final IFriendRepository _friendRepository;
-  final HonkRecurrenceService _recurrenceService =
-      const HonkRecurrenceService();
 
   static const Duration _requestTimeout = Duration(seconds: 15);
   static const _activityColumns =
-      'id, creator_id, activity, location, details, starts_at, recurrence_rrule, '
-      'recurrence_timezone, status_reset_seconds, invite_code, created_at, updated_at';
-
-  // ── Participants ─────────────────────────────────────────────────────────────
-
-  @override
-  TaskEither<MainFailure, List<HonkParticipantCandidate>>
-  fetchEligibleParticipants() {
-    return _friendRepository.fetchFriends().map(
-      (friends) => friends
-          .map((f) => HonkParticipantCandidate(id: f.id, username: f.username))
-          .toList(growable: false),
-    );
-  }
+      'id, creator_id, activity, location, details, '
+      'status_reset_seconds, invite_code, created_at, updated_at';
 
   // ── Mutations ─────────────────────────────────────────────────────────────────
 
@@ -52,12 +34,8 @@ class HonkRepositoryImpl implements IHonkRepository {
     required String activity,
     required String location,
     String? details,
-    required DateTime startsAt,
-    String? recurrenceRrule,
-    required String recurrenceTimezone,
     required int statusResetSeconds,
     required List<HonkStatusOption> statusOptions,
-    required List<String> participantIds,
   }) {
     return TaskEither<MainFailure, HonkActivity>.tryCatch(() async {
       final currentUserId = _requireCurrentUserId();
@@ -68,12 +46,8 @@ class HonkRepositoryImpl implements IHonkRepository {
             'p_activity': activity,
             'p_location': location,
             'p_details': details,
-            'p_starts_at': startsAt.toUtc().toIso8601String(),
-            'p_recurrence_rrule': recurrenceRrule,
-            'p_recurrence_timezone': recurrenceTimezone,
             'p_status_reset_seconds': statusResetSeconds,
             'p_status_options': _serializeStatusOptions(statusOptions),
-            'p_participant_ids': participantIds,
           },
         ),
       );
@@ -104,13 +78,6 @@ class HonkRepositoryImpl implements IHonkRepository {
         details: (trimmedDetails == null || trimmedDetails.isEmpty)
             ? null
             : trimmedDetails,
-        startsAt: startsAt.toUtc(),
-        recurrenceRrule: recurrenceRrule?.trim().isEmpty == true
-            ? null
-            : recurrenceRrule?.trim(),
-        recurrenceTimezone: recurrenceTimezone.trim().isEmpty
-            ? 'UTC'
-            : recurrenceTimezone.trim(),
         statusResetSeconds: statusResetSeconds,
         inviteCode: inviteCode,
         createdAt: nowUtc,
@@ -126,9 +93,6 @@ class HonkRepositoryImpl implements IHonkRepository {
     required String activity,
     required String location,
     String? details,
-    required DateTime startsAt,
-    String? recurrenceRrule,
-    required String recurrenceTimezone,
     required int statusResetSeconds,
     required List<HonkStatusOption> statusOptions,
   }) {
@@ -142,9 +106,6 @@ class HonkRepositoryImpl implements IHonkRepository {
             'p_activity': activity,
             'p_location': location,
             'p_details': details,
-            'p_starts_at': startsAt.toUtc().toIso8601String(),
-            'p_recurrence_rrule': recurrenceRrule,
-            'p_recurrence_timezone': recurrenceTimezone,
             'p_status_reset_seconds': statusResetSeconds,
             'p_status_options': _serializeStatusOptions(statusOptions),
           },
@@ -198,10 +159,9 @@ class HonkRepositoryImpl implements IHonkRepository {
   }
 
   @override
-  TaskEither<MainFailure, String> joinByInviteCode({
-    required String inviteCode,
-  }) {
-    return TaskEither<MainFailure, String>.tryCatch(() async {
+  TaskEither<MainFailure, ({String activityId, bool isPending})>
+  joinByInviteCode({required String inviteCode}) {
+    return TaskEither.tryCatch(() async {
       _requireCurrentUserId();
       final response = await _withTimeout(
         _supabase.rpc(
@@ -214,7 +174,8 @@ class HonkRepositoryImpl implements IHonkRepository {
       if (activityId == null || activityId.isEmpty) {
         throw const MainFailure.databaseFailure('Join failed.');
       }
-      return activityId;
+      final joinStatus = row['join_status'] as String? ?? 'active';
+      return (activityId: activityId, isPending: joinStatus == 'pending');
     }, mapErrorToMainFailure);
   }
 
@@ -236,18 +197,47 @@ class HonkRepositoryImpl implements IHonkRepository {
   TaskEither<MainFailure, Unit> setParticipantStatus({
     required String activityId,
     required String statusKey,
-    DateTime? occurrenceStart,
   }) {
     return TaskEither<MainFailure, Unit>.tryCatch(() async {
       _requireCurrentUserId();
       await _withTimeout(
         _supabase.rpc(
           'set_honk_status',
-          params: {
-            'p_activity_id': activityId,
-            'p_status_key': statusKey,
-            'p_occurrence_start': occurrenceStart?.toUtc().toIso8601String(),
-          },
+          params: {'p_activity_id': activityId, 'p_status_key': statusKey},
+        ),
+      );
+      return unit;
+    }, mapErrorToMainFailure);
+  }
+
+  @override
+  TaskEither<MainFailure, Unit> approveJoinRequest({
+    required String activityId,
+    required String userId,
+  }) {
+    return TaskEither<MainFailure, Unit>.tryCatch(() async {
+      _requireCurrentUserId();
+      await _withTimeout(
+        _supabase.rpc(
+          'approve_join_request',
+          params: {'p_activity_id': activityId, 'p_user_id': userId},
+        ),
+      );
+      return unit;
+    }, mapErrorToMainFailure);
+  }
+
+  @override
+  TaskEither<MainFailure, Unit> denyJoinRequest({
+    required String activityId,
+    required String userId,
+  }) {
+    return TaskEither<MainFailure, Unit>.tryCatch(() async {
+      _requireCurrentUserId();
+      await _withTimeout(
+        _supabase.rpc(
+          'deny_join_request',
+          params: {'p_activity_id': activityId, 'p_user_id': userId},
         ),
       );
       return unit;
@@ -472,9 +462,6 @@ class HonkRepositoryImpl implements IHonkRepository {
             activity: model.activity,
             location: model.location,
             details: model.details,
-            startsAt: model.startsAt.toUtc(),
-            recurrenceRrule: model.recurrenceRrule,
-            recurrenceTimezone: model.recurrenceTimezone,
             statusResetSeconds: model.statusResetSeconds,
             defaultStatusKey: defaultStatusByActivity[aId] ?? '',
             participantCount: participantCountByActivity[aId] ?? 0,
@@ -485,23 +472,10 @@ class HonkRepositoryImpl implements IHonkRepository {
   }
 
   Future<HonkActivityDetails?> _fetchActivityDetails(String activityId) async {
-    final activity = await _withTimeout(_fetchActivityById(activityId));
-    if (activity == null) return null;
-
-    final nowUtc = DateTime.now().toUtc();
-    final occurrenceStart = _recurrenceService.resolveOccurrence(
-      startsAt: activity.startsAt,
-      recurrenceRrule: activity.recurrenceRrule,
-      nowUtc: nowUtc,
-    );
-
     final response = await _withTimeout(
       _supabase.rpc(
         'get_honk_activity_details',
-        params: {
-          'p_activity_id': activityId,
-          'p_occurrence_start': occurrenceStart.toIso8601String(),
-        },
+        params: {'p_activity_id': activityId},
       ),
     );
     if (response == null) return null;
@@ -509,13 +483,32 @@ class HonkRepositoryImpl implements IHonkRepository {
     final data = Map<String, dynamic>.from(response as Map);
     final options = _parseStatusOptions(data['status_options']);
     final participants = _parseParticipants(data['participants']);
+    final pendingParticipants = _parseParticipants(
+      data['pending_participants'],
+    );
     final currentUserId = _requireCurrentUserId();
 
+    // Build a minimal HonkActivity from the details payload.
+    final optionsResponse = await _withTimeout(
+      _supabase
+          .from('honk_activity_status_options')
+          .select(
+            'activity_id, status_key, label, sort_order, is_default, is_active',
+          )
+          .eq('activity_id', activityId)
+          .eq('is_active', true)
+          .order('sort_order', ascending: true),
+    );
+    final allOptions = _parseStatusOptions(optionsResponse);
+
+    final activity = await _withTimeout(_fetchActivityById(activityId));
+    if (activity == null) return null;
+
     return HonkActivityDetails(
-      activity: activity.copyWith(statusOptions: options),
-      occurrenceStart: _asDateTime(data['occurrence_start']),
+      activity: activity.copyWith(statusOptions: allOptions),
       statusOptions: options,
       participants: participants,
+      pendingParticipants: pendingParticipants,
       currentUserId: currentUserId,
     );
   }
@@ -582,12 +575,6 @@ class HonkRepositoryImpl implements IHonkRepository {
           },
         )
         .toList(growable: false);
-  }
-
-  DateTime _asDateTime(dynamic value) {
-    if (value is DateTime) return value.toUtc();
-    if (value is String) return DateTime.parse(value).toUtc();
-    throw const MainFailure.databaseFailure('Invalid datetime value.');
   }
 
   String _requireCurrentUserId() {

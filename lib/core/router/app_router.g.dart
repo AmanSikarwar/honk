@@ -28,10 +28,6 @@ RouteBase get $homeRoute => GoRouteData.$route(
       path: 'activities/:activityId',
       factory: $HonkDetailsRoute._fromState,
     ),
-    GoRouteData.$route(
-      path: 'friends',
-      factory: $FriendManagementRoute._fromState,
-    ),
     GoRouteData.$route(path: 'settings', factory: $SettingsRoute._fromState),
     GoRouteData.$route(path: 'scan', factory: $QrScannerRoute._fromState),
   ],
@@ -88,27 +84,6 @@ mixin $HonkDetailsRoute on GoRouteData {
   String get location => GoRouteData.$location(
     '/activities/${Uri.encodeComponent(_self.activityId)}',
   );
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-mixin $FriendManagementRoute on GoRouteData {
-  static FriendManagementRoute _fromState(GoRouterState state) =>
-      const FriendManagementRoute();
-
-  @override
-  String get location => GoRouteData.$location('/friends');
 
   @override
   void go(BuildContext context) => context.go(location);

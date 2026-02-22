@@ -13,8 +13,9 @@ _HonkParticipantModel _$HonkParticipantModelFromJson(
   username: json['username'] as String,
   fullName: json['full_name'] as String?,
   profileUrl: json['profile_url'] as String?,
-  role: json['role'] as String,
-  effectiveStatusKey: json['effective_status_key'] as String,
+  role: json['role'] as String? ?? 'participant',
+  effectiveStatusKey: json['effective_status_key'] as String? ?? '',
+  joinStatus: json['join_status'] as String? ?? 'active',
   statusUpdatedAt: json['status_updated_at'] == null
       ? null
       : DateTime.parse(json['status_updated_at'] as String),
@@ -32,6 +33,7 @@ Map<String, dynamic> _$HonkParticipantModelToJson(
   'profile_url': instance.profileUrl,
   'role': instance.role,
   'effective_status_key': instance.effectiveStatusKey,
+  'join_status': instance.joinStatus,
   'status_updated_at': instance.statusUpdatedAt?.toIso8601String(),
   'status_expires_at': instance.statusExpiresAt?.toIso8601String(),
 };

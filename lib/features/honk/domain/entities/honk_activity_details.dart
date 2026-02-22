@@ -12,9 +12,9 @@ abstract class HonkActivityDetails with _$HonkActivityDetails {
 
   const factory HonkActivityDetails({
     required HonkActivity activity,
-    required DateTime occurrenceStart,
     required List<HonkStatusOption> statusOptions,
     required List<HonkParticipant> participants,
+    @Default(<HonkParticipant>[]) List<HonkParticipant> pendingParticipants,
     required String currentUserId,
   }) = _HonkActivityDetails;
 

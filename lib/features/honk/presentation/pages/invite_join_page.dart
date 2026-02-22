@@ -32,6 +32,10 @@ class _InviteJoinPageState extends State<InviteJoinPage> {
             _didNavigate = true;
             HonkDetailsRoute(activityId: s.activityId).go(context);
           },
+          pendingApproval: (s) {
+            // Stay on this page showing the pending UI.
+            // When approved (state becomes success) we navigate.
+          },
         );
       },
       child: BlocBuilder<JoinHonkCubit, JoinHonkState>(
@@ -43,6 +47,11 @@ class _InviteJoinPageState extends State<InviteJoinPage> {
                   const _CenteredMessage(text: 'Preparing…', showLoader: true),
               loading: (_) => const _CenteredMessage(
                 text: 'Joining activity…',
+                showLoader: true,
+              ),
+              pendingApproval: (_) => const _CenteredMessage(
+                text:
+                    'Request sent! Waiting for the creator to approve your join request.',
                 showLoader: true,
               ),
               success: (_) => const _CenteredMessage(

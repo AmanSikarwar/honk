@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$HonkParticipant {
 
- String get userId; String get username; String? get fullName; String? get profileUrl; String get role; String get effectiveStatusKey; DateTime? get statusUpdatedAt; DateTime? get statusExpiresAt;
+ String get userId; String get username; String? get fullName; String? get profileUrl; String get role; String get effectiveStatusKey; String get joinStatus; DateTime? get statusUpdatedAt; DateTime? get statusExpiresAt;
 /// Create a copy of HonkParticipant
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $HonkParticipantCopyWith<HonkParticipant> get copyWith => _$HonkParticipantCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HonkParticipant&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.username, username) || other.username == username)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.profileUrl, profileUrl) || other.profileUrl == profileUrl)&&(identical(other.role, role) || other.role == role)&&(identical(other.effectiveStatusKey, effectiveStatusKey) || other.effectiveStatusKey == effectiveStatusKey)&&(identical(other.statusUpdatedAt, statusUpdatedAt) || other.statusUpdatedAt == statusUpdatedAt)&&(identical(other.statusExpiresAt, statusExpiresAt) || other.statusExpiresAt == statusExpiresAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HonkParticipant&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.username, username) || other.username == username)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.profileUrl, profileUrl) || other.profileUrl == profileUrl)&&(identical(other.role, role) || other.role == role)&&(identical(other.effectiveStatusKey, effectiveStatusKey) || other.effectiveStatusKey == effectiveStatusKey)&&(identical(other.joinStatus, joinStatus) || other.joinStatus == joinStatus)&&(identical(other.statusUpdatedAt, statusUpdatedAt) || other.statusUpdatedAt == statusUpdatedAt)&&(identical(other.statusExpiresAt, statusExpiresAt) || other.statusExpiresAt == statusExpiresAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,userId,username,fullName,profileUrl,role,effectiveStatusKey,statusUpdatedAt,statusExpiresAt);
+int get hashCode => Object.hash(runtimeType,userId,username,fullName,profileUrl,role,effectiveStatusKey,joinStatus,statusUpdatedAt,statusExpiresAt);
 
 @override
 String toString() {
-  return 'HonkParticipant(userId: $userId, username: $username, fullName: $fullName, profileUrl: $profileUrl, role: $role, effectiveStatusKey: $effectiveStatusKey, statusUpdatedAt: $statusUpdatedAt, statusExpiresAt: $statusExpiresAt)';
+  return 'HonkParticipant(userId: $userId, username: $username, fullName: $fullName, profileUrl: $profileUrl, role: $role, effectiveStatusKey: $effectiveStatusKey, joinStatus: $joinStatus, statusUpdatedAt: $statusUpdatedAt, statusExpiresAt: $statusExpiresAt)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $HonkParticipantCopyWith<$Res>  {
   factory $HonkParticipantCopyWith(HonkParticipant value, $Res Function(HonkParticipant) _then) = _$HonkParticipantCopyWithImpl;
 @useResult
 $Res call({
- String userId, String username, String? fullName, String? profileUrl, String role, String effectiveStatusKey, DateTime? statusUpdatedAt, DateTime? statusExpiresAt
+ String userId, String username, String? fullName, String? profileUrl, String role, String effectiveStatusKey, String joinStatus, DateTime? statusUpdatedAt, DateTime? statusExpiresAt
 });
 
 
@@ -62,7 +62,7 @@ class _$HonkParticipantCopyWithImpl<$Res>
 
 /// Create a copy of HonkParticipant
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? userId = null,Object? username = null,Object? fullName = freezed,Object? profileUrl = freezed,Object? role = null,Object? effectiveStatusKey = null,Object? statusUpdatedAt = freezed,Object? statusExpiresAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? userId = null,Object? username = null,Object? fullName = freezed,Object? profileUrl = freezed,Object? role = null,Object? effectiveStatusKey = null,Object? joinStatus = null,Object? statusUpdatedAt = freezed,Object? statusExpiresAt = freezed,}) {
   return _then(_self.copyWith(
 userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
@@ -70,6 +70,7 @@ as String,fullName: freezed == fullName ? _self.fullName : fullName // ignore: c
 as String?,profileUrl: freezed == profileUrl ? _self.profileUrl : profileUrl // ignore: cast_nullable_to_non_nullable
 as String?,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
 as String,effectiveStatusKey: null == effectiveStatusKey ? _self.effectiveStatusKey : effectiveStatusKey // ignore: cast_nullable_to_non_nullable
+as String,joinStatus: null == joinStatus ? _self.joinStatus : joinStatus // ignore: cast_nullable_to_non_nullable
 as String,statusUpdatedAt: freezed == statusUpdatedAt ? _self.statusUpdatedAt : statusUpdatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,statusExpiresAt: freezed == statusExpiresAt ? _self.statusExpiresAt : statusExpiresAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
@@ -157,10 +158,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String userId,  String username,  String? fullName,  String? profileUrl,  String role,  String effectiveStatusKey,  DateTime? statusUpdatedAt,  DateTime? statusExpiresAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String userId,  String username,  String? fullName,  String? profileUrl,  String role,  String effectiveStatusKey,  String joinStatus,  DateTime? statusUpdatedAt,  DateTime? statusExpiresAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _HonkParticipant() when $default != null:
-return $default(_that.userId,_that.username,_that.fullName,_that.profileUrl,_that.role,_that.effectiveStatusKey,_that.statusUpdatedAt,_that.statusExpiresAt);case _:
+return $default(_that.userId,_that.username,_that.fullName,_that.profileUrl,_that.role,_that.effectiveStatusKey,_that.joinStatus,_that.statusUpdatedAt,_that.statusExpiresAt);case _:
   return orElse();
 
 }
@@ -178,10 +179,10 @@ return $default(_that.userId,_that.username,_that.fullName,_that.profileUrl,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String userId,  String username,  String? fullName,  String? profileUrl,  String role,  String effectiveStatusKey,  DateTime? statusUpdatedAt,  DateTime? statusExpiresAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String userId,  String username,  String? fullName,  String? profileUrl,  String role,  String effectiveStatusKey,  String joinStatus,  DateTime? statusUpdatedAt,  DateTime? statusExpiresAt)  $default,) {final _that = this;
 switch (_that) {
 case _HonkParticipant():
-return $default(_that.userId,_that.username,_that.fullName,_that.profileUrl,_that.role,_that.effectiveStatusKey,_that.statusUpdatedAt,_that.statusExpiresAt);case _:
+return $default(_that.userId,_that.username,_that.fullName,_that.profileUrl,_that.role,_that.effectiveStatusKey,_that.joinStatus,_that.statusUpdatedAt,_that.statusExpiresAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -198,10 +199,10 @@ return $default(_that.userId,_that.username,_that.fullName,_that.profileUrl,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String userId,  String username,  String? fullName,  String? profileUrl,  String role,  String effectiveStatusKey,  DateTime? statusUpdatedAt,  DateTime? statusExpiresAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String userId,  String username,  String? fullName,  String? profileUrl,  String role,  String effectiveStatusKey,  String joinStatus,  DateTime? statusUpdatedAt,  DateTime? statusExpiresAt)?  $default,) {final _that = this;
 switch (_that) {
 case _HonkParticipant() when $default != null:
-return $default(_that.userId,_that.username,_that.fullName,_that.profileUrl,_that.role,_that.effectiveStatusKey,_that.statusUpdatedAt,_that.statusExpiresAt);case _:
+return $default(_that.userId,_that.username,_that.fullName,_that.profileUrl,_that.role,_that.effectiveStatusKey,_that.joinStatus,_that.statusUpdatedAt,_that.statusExpiresAt);case _:
   return null;
 
 }
@@ -213,15 +214,16 @@ return $default(_that.userId,_that.username,_that.fullName,_that.profileUrl,_tha
 
 
 class _HonkParticipant extends HonkParticipant {
-  const _HonkParticipant({required this.userId, required this.username, this.fullName, this.profileUrl, required this.role, required this.effectiveStatusKey, this.statusUpdatedAt, this.statusExpiresAt}): super._();
+  const _HonkParticipant({required this.userId, required this.username, this.fullName, this.profileUrl, this.role = 'participant', this.effectiveStatusKey = '', this.joinStatus = 'active', this.statusUpdatedAt, this.statusExpiresAt}): super._();
   
 
 @override final  String userId;
 @override final  String username;
 @override final  String? fullName;
 @override final  String? profileUrl;
-@override final  String role;
-@override final  String effectiveStatusKey;
+@override@JsonKey() final  String role;
+@override@JsonKey() final  String effectiveStatusKey;
+@override@JsonKey() final  String joinStatus;
 @override final  DateTime? statusUpdatedAt;
 @override final  DateTime? statusExpiresAt;
 
@@ -235,16 +237,16 @@ _$HonkParticipantCopyWith<_HonkParticipant> get copyWith => __$HonkParticipantCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HonkParticipant&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.username, username) || other.username == username)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.profileUrl, profileUrl) || other.profileUrl == profileUrl)&&(identical(other.role, role) || other.role == role)&&(identical(other.effectiveStatusKey, effectiveStatusKey) || other.effectiveStatusKey == effectiveStatusKey)&&(identical(other.statusUpdatedAt, statusUpdatedAt) || other.statusUpdatedAt == statusUpdatedAt)&&(identical(other.statusExpiresAt, statusExpiresAt) || other.statusExpiresAt == statusExpiresAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HonkParticipant&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.username, username) || other.username == username)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.profileUrl, profileUrl) || other.profileUrl == profileUrl)&&(identical(other.role, role) || other.role == role)&&(identical(other.effectiveStatusKey, effectiveStatusKey) || other.effectiveStatusKey == effectiveStatusKey)&&(identical(other.joinStatus, joinStatus) || other.joinStatus == joinStatus)&&(identical(other.statusUpdatedAt, statusUpdatedAt) || other.statusUpdatedAt == statusUpdatedAt)&&(identical(other.statusExpiresAt, statusExpiresAt) || other.statusExpiresAt == statusExpiresAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,userId,username,fullName,profileUrl,role,effectiveStatusKey,statusUpdatedAt,statusExpiresAt);
+int get hashCode => Object.hash(runtimeType,userId,username,fullName,profileUrl,role,effectiveStatusKey,joinStatus,statusUpdatedAt,statusExpiresAt);
 
 @override
 String toString() {
-  return 'HonkParticipant(userId: $userId, username: $username, fullName: $fullName, profileUrl: $profileUrl, role: $role, effectiveStatusKey: $effectiveStatusKey, statusUpdatedAt: $statusUpdatedAt, statusExpiresAt: $statusExpiresAt)';
+  return 'HonkParticipant(userId: $userId, username: $username, fullName: $fullName, profileUrl: $profileUrl, role: $role, effectiveStatusKey: $effectiveStatusKey, joinStatus: $joinStatus, statusUpdatedAt: $statusUpdatedAt, statusExpiresAt: $statusExpiresAt)';
 }
 
 
@@ -255,7 +257,7 @@ abstract mixin class _$HonkParticipantCopyWith<$Res> implements $HonkParticipant
   factory _$HonkParticipantCopyWith(_HonkParticipant value, $Res Function(_HonkParticipant) _then) = __$HonkParticipantCopyWithImpl;
 @override @useResult
 $Res call({
- String userId, String username, String? fullName, String? profileUrl, String role, String effectiveStatusKey, DateTime? statusUpdatedAt, DateTime? statusExpiresAt
+ String userId, String username, String? fullName, String? profileUrl, String role, String effectiveStatusKey, String joinStatus, DateTime? statusUpdatedAt, DateTime? statusExpiresAt
 });
 
 
@@ -272,7 +274,7 @@ class __$HonkParticipantCopyWithImpl<$Res>
 
 /// Create a copy of HonkParticipant
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? userId = null,Object? username = null,Object? fullName = freezed,Object? profileUrl = freezed,Object? role = null,Object? effectiveStatusKey = null,Object? statusUpdatedAt = freezed,Object? statusExpiresAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? userId = null,Object? username = null,Object? fullName = freezed,Object? profileUrl = freezed,Object? role = null,Object? effectiveStatusKey = null,Object? joinStatus = null,Object? statusUpdatedAt = freezed,Object? statusExpiresAt = freezed,}) {
   return _then(_HonkParticipant(
 userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
@@ -280,6 +282,7 @@ as String,fullName: freezed == fullName ? _self.fullName : fullName // ignore: c
 as String?,profileUrl: freezed == profileUrl ? _self.profileUrl : profileUrl // ignore: cast_nullable_to_non_nullable
 as String?,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
 as String,effectiveStatusKey: null == effectiveStatusKey ? _self.effectiveStatusKey : effectiveStatusKey // ignore: cast_nullable_to_non_nullable
+as String,joinStatus: null == joinStatus ? _self.joinStatus : joinStatus // ignore: cast_nullable_to_non_nullable
 as String,statusUpdatedAt: freezed == statusUpdatedAt ? _self.statusUpdatedAt : statusUpdatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,statusExpiresAt: freezed == statusExpiresAt ? _self.statusExpiresAt : statusExpiresAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,

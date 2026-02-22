@@ -8,8 +8,6 @@ import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/signup_page.dart';
 import '../../features/auth/presentation/pages/update_password_page.dart';
-import '../../features/friends/presentation/cubit/friend_management_cubit.dart';
-import '../../features/friends/presentation/pages/friend_management_page.dart';
 import '../../features/honk/presentation/bloc/honk_feed_bloc.dart';
 import '../../features/honk/presentation/cubit/create_honk_cubit.dart';
 import '../../features/honk/presentation/cubit/honk_details_cubit.dart';
@@ -30,7 +28,6 @@ part 'app_router.g.dart';
   routes: <TypedRoute>[
     TypedGoRoute<CreateHonkRoute>(path: 'activities/create'),
     TypedGoRoute<HonkDetailsRoute>(path: 'activities/:activityId'),
-    TypedGoRoute<FriendManagementRoute>(path: 'friends'),
     TypedGoRoute<SettingsRoute>(path: 'settings'),
     TypedGoRoute<QrScannerRoute>(path: 'scan'),
   ],
@@ -69,18 +66,6 @@ class HonkDetailsRoute extends GoRouteData with $HonkDetailsRoute {
     return BlocProvider(
       create: (_) => getIt<HonkDetailsCubit>()..watch(activityId),
       child: HonkDetailsPage(activityId: activityId),
-    );
-  }
-}
-
-class FriendManagementRoute extends GoRouteData with $FriendManagementRoute {
-  const FriendManagementRoute();
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) {
-    return BlocProvider(
-      create: (_) => getIt<FriendManagementCubit>(),
-      child: const FriendManagementPage(),
     );
   }
 }

@@ -11,11 +11,13 @@ abstract class HonkParticipant with _$HonkParticipant {
     required String username,
     String? fullName,
     String? profileUrl,
-    required String role,
-    required String effectiveStatusKey,
+    @Default('participant') String role,
+    @Default('') String effectiveStatusKey,
+    @Default('active') String joinStatus,
     DateTime? statusUpdatedAt,
     DateTime? statusExpiresAt,
   }) = _HonkParticipant;
 
   bool get isCreator => role == 'creator';
+  bool get isPending => joinStatus == 'pending';
 }

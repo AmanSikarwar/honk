@@ -22,12 +22,6 @@ import '../../features/auth/data/repositories/auth_repository_impl.dart'
     as _i153;
 import '../../features/auth/domain/repositories/auth_repository.dart' as _i787;
 import '../../features/auth/presentation/bloc/auth_bloc.dart' as _i797;
-import '../../features/friends/data/repositories/friend_repository_impl.dart'
-    as _i766;
-import '../../features/friends/domain/repositories/i_friend_repository.dart'
-    as _i129;
-import '../../features/friends/presentation/cubit/friend_management_cubit.dart'
-    as _i280;
 import '../../features/honk/data/repositories/honk_repository_impl.dart'
     as _i1038;
 import '../../features/honk/domain/repositories/i_honk_repository.dart' as _i31;
@@ -71,8 +65,8 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i163.FlutterLocalNotificationsPlugin>(
       () => registerModule.flutterLocalNotificationsPlugin,
     );
-    gh.lazySingleton<_i129.IFriendRepository>(
-      () => _i766.FriendRepositoryImpl(gh<_i454.SupabaseClient>()),
+    gh.lazySingleton<_i31.IHonkRepository>(
+      () => _i1038.HonkRepositoryImpl(gh<_i454.SupabaseClient>()),
     );
     gh.lazySingleton<_i809.INotificationRepository>(
       () => _i361.NotificationRepositoryImpl(
@@ -89,24 +83,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i559.NotificationSyncCubit>(
       () => _i559.NotificationSyncCubit(gh<_i809.INotificationRepository>()),
     );
-    gh.factory<_i280.FriendManagementCubit>(
-      () => _i280.FriendManagementCubit(gh<_i129.IFriendRepository>()),
-    );
-    gh.lazySingleton<_i31.IHonkRepository>(
-      () => _i1038.HonkRepositoryImpl(
-        gh<_i454.SupabaseClient>(),
-        gh<_i129.IFriendRepository>(),
-      ),
-    );
-    gh.lazySingleton<_i787.AuthRepository>(
-      () => _i153.AuthRepositoryImpl(
-        gh<_i454.GoTrueClient>(),
-        gh<_i116.GoogleSignIn>(),
-      ),
-    );
-    gh.factory<_i797.AuthBloc>(
-      () => _i797.AuthBloc(gh<_i787.AuthRepository>()),
-    );
     gh.factory<_i86.HonkFeedBloc>(
       () => _i86.HonkFeedBloc(gh<_i31.IHonkRepository>()),
     );
@@ -116,8 +92,20 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i351.HonkDetailsCubit>(
       () => _i351.HonkDetailsCubit(gh<_i31.IHonkRepository>()),
     );
+    gh.lazySingleton<_i787.AuthRepository>(
+      () => _i153.AuthRepositoryImpl(
+        gh<_i454.GoTrueClient>(),
+        gh<_i116.GoogleSignIn>(),
+      ),
+    );
     gh.factory<_i473.JoinHonkCubit>(
-      () => _i473.JoinHonkCubit(gh<_i31.IHonkRepository>()),
+      () => _i473.JoinHonkCubit(
+        gh<_i31.IHonkRepository>(),
+        gh<_i454.SupabaseClient>(),
+      ),
+    );
+    gh.factory<_i797.AuthBloc>(
+      () => _i797.AuthBloc(gh<_i787.AuthRepository>()),
     );
     return this;
   }

@@ -7,9 +7,6 @@ type HonkActivityRecord = {
   activity: string
   location: string
   details: string | null
-  starts_at: string
-  recurrence_rrule: string | null
-  recurrence_timezone: string
   status_reset_seconds: number
   invite_code: string
 }
@@ -17,10 +14,18 @@ type HonkActivityRecord = {
 type HonkParticipantStatusRecord = {
   activity_id: string
   user_id: string
-  occurrence_start: string
   status_key: string
   updated_at: string
   expires_at: string
+}
+
+type HonkParticipantRecord = {
+  activity_id: string
+  user_id: string
+  role: string
+  join_status: string
+  joined_at: string
+  left_at: string | null
 }
 
 type WebhookPayload = {
@@ -33,6 +38,7 @@ type WebhookPayload = {
 
 type ParticipantRow = {
   user_id: string
+  join_status: string
 }
 
 type ProfileWithTokenRow = {
@@ -52,6 +58,7 @@ type ActivityCoreRow = {
   id: string
   activity: string
   location: string
+  creator_id: string
 }
 
 type FirebaseConfig = {
@@ -96,6 +103,10 @@ Deno.serve(async (req) => {
 
     if (payload.table === 'honk_participant_statuses') {
       return await handleParticipantStatusUpdated(payload)
+    }
+
+    if (payload.table === 'honk_activity_participants') {
+      return await handleParticipantJoinChanged(payload)
     }
 
     return Response.json({ skipped: true, reason: 'Unsupported table.' })
@@ -167,25 +178,13 @@ async function handleActivityCreated(payload: WebhookPayload): Promise<Response>
           actor_user_id: creatorId,
           activity: activity.activity,
           location: activity.location,
-          occurrence_start: activity.starts_at,
           status_key: '',
         },
       }),
     ),
   )
 
-  const delivered = deliveryResult.filter((result) => result.status === 'fulfilled').length
-  const failed = deliveryResult.length - delivered
-
-  const errors = deliveryResult
-    .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-    .map((r) => r.reason instanceof Error ? r.reason.message : String(r.reason))
-
-  if (errors.length > 0) {
-    console.error('FCM delivery failures (activity_created):', JSON.stringify(errors))
-  }
-
-  return Response.json({ delivered, failed, errors: errors.length > 0 ? errors : undefined })
+  return buildDeliveryResponse(deliveryResult, 'activity_created')
 }
 
 async function handleParticipantStatusUpdated(payload: WebhookPayload): Promise<Response> {
@@ -258,25 +257,128 @@ async function handleParticipantStatusUpdated(payload: WebhookPayload): Promise<
           actor_user_id: actorUserId,
           activity: activity.activity,
           location: activity.location,
-          occurrence_start: statusRecord.occurrence_start,
           status_key: statusRecord.status_key,
         },
       }),
     ),
   )
 
-  const delivered = deliveryResult.filter((result) => result.status === 'fulfilled').length
-  const failed = deliveryResult.length - delivered
+  return buildDeliveryResponse(deliveryResult, 'status_updated')
+}
 
-  const errors = deliveryResult
-    .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-    .map((r) => r.reason instanceof Error ? r.reason.message : String(r.reason))
+// ── Participant join request changed ──────────────────────────────────────────
 
-  if (errors.length > 0) {
-    console.error('FCM delivery failures (status_updated):', JSON.stringify(errors))
+async function handleParticipantJoinChanged(payload: WebhookPayload): Promise<Response> {
+  if (payload.record == null) {
+    return Response.json({ skipped: true, reason: 'Empty record.' })
   }
 
-  return Response.json({ delivered, failed, errors: errors.length > 0 ? errors : undefined })
+  const record = payload.record as HonkParticipantRecord
+  const { activity_id: activityId, user_id: userId, join_status: joinStatus } = record
+
+  if (activityId == null || userId == null || joinStatus == null) {
+    return Response.json({ skipped: true, reason: 'Missing required fields.' })
+  }
+
+  if (payload.type === 'INSERT' && joinStatus === 'pending') {
+    return await notifyCreatorOfJoinRequest(activityId, userId)
+  }
+
+  if (payload.type === 'UPDATE' && joinStatus === 'active') {
+    return await notifyJoinerOfApproval(activityId, userId)
+  }
+
+  return Response.json({ skipped: true, reason: 'No notification needed for this event.' })
+}
+
+async function notifyCreatorOfJoinRequest(
+  activityId: string,
+  joinerId: string,
+): Promise<Response> {
+  const activity = await fetchActivityCore(activityId)
+  if (activity == null) {
+    return Response.json({ skipped: true, reason: 'Activity not found.' })
+  }
+
+  const tokens = await fetchTokensForUsers([activity.creator_id])
+  if (tokens.length === 0) {
+    return Response.json({ delivered: 0, failed: 0, skipped: true })
+  }
+
+  const joinerName = await fetchUsername(joinerId) ?? 'Someone'
+
+  const firebaseConfig = readFirebaseConfig()
+  if (firebaseConfig == null) {
+    return Response.json({ delivered: 0, failed: 0, skipped: true, reason: 'Missing Firebase configuration.' })
+  }
+
+  const accessToken = await getFirebaseAccessToken(firebaseConfig)
+  const deliveryResult = await Promise.allSettled(
+    tokens.map((token) =>
+      sendFcmMessage({
+        accessToken,
+        projectId: firebaseConfig.projectId,
+        token,
+        title: 'Join Request',
+        body: `${joinerName} wants to join "${activity.activity}".`,
+        ttlSeconds: 86400,
+        data: {
+          event_type: 'join_request',
+          activity_id: activityId,
+          actor_user_id: joinerId,
+          activity: activity.activity,
+          location: activity.location,
+          status_key: '',
+        },
+      }),
+    ),
+  )
+
+  return buildDeliveryResponse(deliveryResult, 'join_request')
+}
+
+async function notifyJoinerOfApproval(
+  activityId: string,
+  joinerId: string,
+): Promise<Response> {
+  const activity = await fetchActivityCore(activityId)
+  if (activity == null) {
+    return Response.json({ skipped: true, reason: 'Activity not found.' })
+  }
+
+  const tokens = await fetchTokensForUsers([joinerId])
+  if (tokens.length === 0) {
+    return Response.json({ delivered: 0, failed: 0, skipped: true })
+  }
+
+  const firebaseConfig = readFirebaseConfig()
+  if (firebaseConfig == null) {
+    return Response.json({ delivered: 0, failed: 0, skipped: true, reason: 'Missing Firebase configuration.' })
+  }
+
+  const accessToken = await getFirebaseAccessToken(firebaseConfig)
+  const deliveryResult = await Promise.allSettled(
+    tokens.map((token) =>
+      sendFcmMessage({
+        accessToken,
+        projectId: firebaseConfig.projectId,
+        token,
+        title: 'Join Approved!',
+        body: `You\'ve been approved to join "${activity.activity}".`,
+        ttlSeconds: 86400,
+        data: {
+          event_type: 'join_approved',
+          activity_id: activityId,
+          actor_user_id: activity.creator_id,
+          activity: activity.activity,
+          location: activity.location,
+          status_key: '',
+        },
+      }),
+    ),
+  )
+
+  return buildDeliveryResponse(deliveryResult, 'join_approved')
 }
 
 async function fetchActiveParticipantIds(args: {
@@ -285,8 +387,9 @@ async function fetchActiveParticipantIds(args: {
 }): Promise<string[]> {
   const result = await supabaseAdmin
     .from('honk_activity_participants')
-    .select('user_id')
+    .select('user_id, join_status')
     .eq('activity_id', args.activityId)
+    .eq('join_status', 'active')
     .is('left_at', null)
     .returns<ParticipantRow[]>()
 
@@ -342,10 +445,27 @@ async function fetchUsername(userId: string): Promise<string | null> {
   return result.data?.username ?? null
 }
 
+function buildDeliveryResponse(
+  results: PromiseSettledResult<void>[],
+  eventType: string,
+): Response {
+  const delivered = results.filter((r) => r.status === 'fulfilled').length
+  const failed = results.length - delivered
+  const errors = results
+    .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+    .map((r) => r.reason instanceof Error ? r.reason.message : String(r.reason))
+
+  if (errors.length > 0) {
+    console.error(`FCM delivery failures (${eventType}):`, JSON.stringify(errors))
+  }
+
+  return Response.json({ delivered, failed, errors: errors.length > 0 ? errors : undefined })
+}
+
 async function fetchActivityCore(activityId: string): Promise<ActivityCoreRow | null> {
   const result = await supabaseAdmin
     .from('honk_activities')
-    .select('id, activity, location')
+    .select('id, activity, location, creator_id')
     .eq('id', activityId)
     .maybeSingle<ActivityCoreRow>()
 

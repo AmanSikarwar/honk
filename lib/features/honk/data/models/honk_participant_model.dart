@@ -17,8 +17,9 @@ abstract class HonkParticipantModel with _$HonkParticipantModel {
     required String username,
     String? fullName,
     String? profileUrl,
-    required String role,
-    required String effectiveStatusKey,
+    @Default('participant') String role,
+    @Default('') String effectiveStatusKey,
+    @Default('active') String joinStatus,
     DateTime? statusUpdatedAt,
     DateTime? statusExpiresAt,
   }) = _HonkParticipantModel;
@@ -30,6 +31,7 @@ abstract class HonkParticipantModel with _$HonkParticipantModel {
     profileUrl: profileUrl,
     role: role,
     effectiveStatusKey: effectiveStatusKey,
+    joinStatus: joinStatus,
     statusUpdatedAt: statusUpdatedAt?.toUtc(),
     statusExpiresAt: statusExpiresAt?.toUtc(),
   );

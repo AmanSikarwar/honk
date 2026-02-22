@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CreateHonkState {
 
- bool get isLoadingParticipants; List<HonkParticipantCandidate> get eligibleParticipants; MainFailure? get participantsFailure; bool get isSubmitting; HonkActivity? get createdActivity; MainFailure? get submissionFailure;
+ bool get isSubmitting; HonkActivity? get createdActivity; MainFailure? get submissionFailure;
 /// Create a copy of CreateHonkState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $CreateHonkStateCopyWith<CreateHonkState> get copyWith => _$CreateHonkStateCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CreateHonkState&&(identical(other.isLoadingParticipants, isLoadingParticipants) || other.isLoadingParticipants == isLoadingParticipants)&&const DeepCollectionEquality().equals(other.eligibleParticipants, eligibleParticipants)&&(identical(other.participantsFailure, participantsFailure) || other.participantsFailure == participantsFailure)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.createdActivity, createdActivity) || other.createdActivity == createdActivity)&&(identical(other.submissionFailure, submissionFailure) || other.submissionFailure == submissionFailure));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CreateHonkState&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.createdActivity, createdActivity) || other.createdActivity == createdActivity)&&(identical(other.submissionFailure, submissionFailure) || other.submissionFailure == submissionFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoadingParticipants,const DeepCollectionEquality().hash(eligibleParticipants),participantsFailure,isSubmitting,createdActivity,submissionFailure);
+int get hashCode => Object.hash(runtimeType,isSubmitting,createdActivity,submissionFailure);
 
 @override
 String toString() {
-  return 'CreateHonkState(isLoadingParticipants: $isLoadingParticipants, eligibleParticipants: $eligibleParticipants, participantsFailure: $participantsFailure, isSubmitting: $isSubmitting, createdActivity: $createdActivity, submissionFailure: $submissionFailure)';
+  return 'CreateHonkState(isSubmitting: $isSubmitting, createdActivity: $createdActivity, submissionFailure: $submissionFailure)';
 }
 
 
@@ -45,11 +45,11 @@ abstract mixin class $CreateHonkStateCopyWith<$Res>  {
   factory $CreateHonkStateCopyWith(CreateHonkState value, $Res Function(CreateHonkState) _then) = _$CreateHonkStateCopyWithImpl;
 @useResult
 $Res call({
- bool isLoadingParticipants, List<HonkParticipantCandidate> eligibleParticipants, MainFailure? participantsFailure, bool isSubmitting, HonkActivity? createdActivity, MainFailure? submissionFailure
+ bool isSubmitting, HonkActivity? createdActivity, MainFailure? submissionFailure
 });
 
 
-$MainFailureCopyWith<$Res>? get participantsFailure;$HonkActivityCopyWith<$Res>? get createdActivity;$MainFailureCopyWith<$Res>? get submissionFailure;
+$HonkActivityCopyWith<$Res>? get createdActivity;$MainFailureCopyWith<$Res>? get submissionFailure;
 
 }
 /// @nodoc
@@ -62,30 +62,15 @@ class _$CreateHonkStateCopyWithImpl<$Res>
 
 /// Create a copy of CreateHonkState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? isLoadingParticipants = null,Object? eligibleParticipants = null,Object? participantsFailure = freezed,Object? isSubmitting = null,Object? createdActivity = freezed,Object? submissionFailure = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? isSubmitting = null,Object? createdActivity = freezed,Object? submissionFailure = freezed,}) {
   return _then(_self.copyWith(
-isLoadingParticipants: null == isLoadingParticipants ? _self.isLoadingParticipants : isLoadingParticipants // ignore: cast_nullable_to_non_nullable
-as bool,eligibleParticipants: null == eligibleParticipants ? _self.eligibleParticipants : eligibleParticipants // ignore: cast_nullable_to_non_nullable
-as List<HonkParticipantCandidate>,participantsFailure: freezed == participantsFailure ? _self.participantsFailure : participantsFailure // ignore: cast_nullable_to_non_nullable
-as MainFailure?,isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
+isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
 as bool,createdActivity: freezed == createdActivity ? _self.createdActivity : createdActivity // ignore: cast_nullable_to_non_nullable
 as HonkActivity?,submissionFailure: freezed == submissionFailure ? _self.submissionFailure : submissionFailure // ignore: cast_nullable_to_non_nullable
 as MainFailure?,
   ));
 }
 /// Create a copy of CreateHonkState
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$MainFailureCopyWith<$Res>? get participantsFailure {
-    if (_self.participantsFailure == null) {
-    return null;
-  }
-
-  return $MainFailureCopyWith<$Res>(_self.participantsFailure!, (value) {
-    return _then(_self.copyWith(participantsFailure: value));
-  });
-}/// Create a copy of CreateHonkState
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -191,10 +176,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool isLoadingParticipants,  List<HonkParticipantCandidate> eligibleParticipants,  MainFailure? participantsFailure,  bool isSubmitting,  HonkActivity? createdActivity,  MainFailure? submissionFailure)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool isSubmitting,  HonkActivity? createdActivity,  MainFailure? submissionFailure)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CreateHonkState() when $default != null:
-return $default(_that.isLoadingParticipants,_that.eligibleParticipants,_that.participantsFailure,_that.isSubmitting,_that.createdActivity,_that.submissionFailure);case _:
+return $default(_that.isSubmitting,_that.createdActivity,_that.submissionFailure);case _:
   return orElse();
 
 }
@@ -212,10 +197,10 @@ return $default(_that.isLoadingParticipants,_that.eligibleParticipants,_that.par
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool isLoadingParticipants,  List<HonkParticipantCandidate> eligibleParticipants,  MainFailure? participantsFailure,  bool isSubmitting,  HonkActivity? createdActivity,  MainFailure? submissionFailure)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool isSubmitting,  HonkActivity? createdActivity,  MainFailure? submissionFailure)  $default,) {final _that = this;
 switch (_that) {
 case _CreateHonkState():
-return $default(_that.isLoadingParticipants,_that.eligibleParticipants,_that.participantsFailure,_that.isSubmitting,_that.createdActivity,_that.submissionFailure);case _:
+return $default(_that.isSubmitting,_that.createdActivity,_that.submissionFailure);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -232,10 +217,10 @@ return $default(_that.isLoadingParticipants,_that.eligibleParticipants,_that.par
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool isLoadingParticipants,  List<HonkParticipantCandidate> eligibleParticipants,  MainFailure? participantsFailure,  bool isSubmitting,  HonkActivity? createdActivity,  MainFailure? submissionFailure)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool isSubmitting,  HonkActivity? createdActivity,  MainFailure? submissionFailure)?  $default,) {final _that = this;
 switch (_that) {
 case _CreateHonkState() when $default != null:
-return $default(_that.isLoadingParticipants,_that.eligibleParticipants,_that.participantsFailure,_that.isSubmitting,_that.createdActivity,_that.submissionFailure);case _:
+return $default(_that.isSubmitting,_that.createdActivity,_that.submissionFailure);case _:
   return null;
 
 }
@@ -247,18 +232,9 @@ return $default(_that.isLoadingParticipants,_that.eligibleParticipants,_that.par
 
 
 class _CreateHonkState implements CreateHonkState {
-  const _CreateHonkState({this.isLoadingParticipants = false, final  List<HonkParticipantCandidate> eligibleParticipants = const <HonkParticipantCandidate>[], this.participantsFailure, this.isSubmitting = false, this.createdActivity, this.submissionFailure}): _eligibleParticipants = eligibleParticipants;
+  const _CreateHonkState({this.isSubmitting = false, this.createdActivity, this.submissionFailure});
   
 
-@override@JsonKey() final  bool isLoadingParticipants;
- final  List<HonkParticipantCandidate> _eligibleParticipants;
-@override@JsonKey() List<HonkParticipantCandidate> get eligibleParticipants {
-  if (_eligibleParticipants is EqualUnmodifiableListView) return _eligibleParticipants;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_eligibleParticipants);
-}
-
-@override final  MainFailure? participantsFailure;
 @override@JsonKey() final  bool isSubmitting;
 @override final  HonkActivity? createdActivity;
 @override final  MainFailure? submissionFailure;
@@ -273,16 +249,16 @@ _$CreateHonkStateCopyWith<_CreateHonkState> get copyWith => __$CreateHonkStateCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CreateHonkState&&(identical(other.isLoadingParticipants, isLoadingParticipants) || other.isLoadingParticipants == isLoadingParticipants)&&const DeepCollectionEquality().equals(other._eligibleParticipants, _eligibleParticipants)&&(identical(other.participantsFailure, participantsFailure) || other.participantsFailure == participantsFailure)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.createdActivity, createdActivity) || other.createdActivity == createdActivity)&&(identical(other.submissionFailure, submissionFailure) || other.submissionFailure == submissionFailure));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CreateHonkState&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.createdActivity, createdActivity) || other.createdActivity == createdActivity)&&(identical(other.submissionFailure, submissionFailure) || other.submissionFailure == submissionFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoadingParticipants,const DeepCollectionEquality().hash(_eligibleParticipants),participantsFailure,isSubmitting,createdActivity,submissionFailure);
+int get hashCode => Object.hash(runtimeType,isSubmitting,createdActivity,submissionFailure);
 
 @override
 String toString() {
-  return 'CreateHonkState(isLoadingParticipants: $isLoadingParticipants, eligibleParticipants: $eligibleParticipants, participantsFailure: $participantsFailure, isSubmitting: $isSubmitting, createdActivity: $createdActivity, submissionFailure: $submissionFailure)';
+  return 'CreateHonkState(isSubmitting: $isSubmitting, createdActivity: $createdActivity, submissionFailure: $submissionFailure)';
 }
 
 
@@ -293,11 +269,11 @@ abstract mixin class _$CreateHonkStateCopyWith<$Res> implements $CreateHonkState
   factory _$CreateHonkStateCopyWith(_CreateHonkState value, $Res Function(_CreateHonkState) _then) = __$CreateHonkStateCopyWithImpl;
 @override @useResult
 $Res call({
- bool isLoadingParticipants, List<HonkParticipantCandidate> eligibleParticipants, MainFailure? participantsFailure, bool isSubmitting, HonkActivity? createdActivity, MainFailure? submissionFailure
+ bool isSubmitting, HonkActivity? createdActivity, MainFailure? submissionFailure
 });
 
 
-@override $MainFailureCopyWith<$Res>? get participantsFailure;@override $HonkActivityCopyWith<$Res>? get createdActivity;@override $MainFailureCopyWith<$Res>? get submissionFailure;
+@override $HonkActivityCopyWith<$Res>? get createdActivity;@override $MainFailureCopyWith<$Res>? get submissionFailure;
 
 }
 /// @nodoc
@@ -310,12 +286,9 @@ class __$CreateHonkStateCopyWithImpl<$Res>
 
 /// Create a copy of CreateHonkState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? isLoadingParticipants = null,Object? eligibleParticipants = null,Object? participantsFailure = freezed,Object? isSubmitting = null,Object? createdActivity = freezed,Object? submissionFailure = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? isSubmitting = null,Object? createdActivity = freezed,Object? submissionFailure = freezed,}) {
   return _then(_CreateHonkState(
-isLoadingParticipants: null == isLoadingParticipants ? _self.isLoadingParticipants : isLoadingParticipants // ignore: cast_nullable_to_non_nullable
-as bool,eligibleParticipants: null == eligibleParticipants ? _self._eligibleParticipants : eligibleParticipants // ignore: cast_nullable_to_non_nullable
-as List<HonkParticipantCandidate>,participantsFailure: freezed == participantsFailure ? _self.participantsFailure : participantsFailure // ignore: cast_nullable_to_non_nullable
-as MainFailure?,isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
+isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
 as bool,createdActivity: freezed == createdActivity ? _self.createdActivity : createdActivity // ignore: cast_nullable_to_non_nullable
 as HonkActivity?,submissionFailure: freezed == submissionFailure ? _self.submissionFailure : submissionFailure // ignore: cast_nullable_to_non_nullable
 as MainFailure?,
@@ -323,18 +296,6 @@ as MainFailure?,
 }
 
 /// Create a copy of CreateHonkState
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$MainFailureCopyWith<$Res>? get participantsFailure {
-    if (_self.participantsFailure == null) {
-    return null;
-  }
-
-  return $MainFailureCopyWith<$Res>(_self.participantsFailure!, (value) {
-    return _then(_self.copyWith(participantsFailure: value));
-  });
-}/// Create a copy of CreateHonkState
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')

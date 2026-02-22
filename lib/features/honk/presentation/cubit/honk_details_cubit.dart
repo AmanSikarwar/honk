@@ -39,7 +39,6 @@ class HonkDetailsCubit extends Cubit<HonkDetailsState> {
 
   Future<void> setStatus({
     required String activityId,
-    required DateTime occurrenceStart,
     required String statusKey,
   }) async {
     emit(
@@ -50,11 +49,7 @@ class HonkDetailsCubit extends Cubit<HonkDetailsState> {
       ),
     );
     final result = await _repository
-        .setParticipantStatus(
-          activityId: activityId,
-          statusKey: statusKey,
-          occurrenceStart: occurrenceStart,
-        )
+        .setParticipantStatus(activityId: activityId, statusKey: statusKey)
         .run();
     result.match(
       (failure) => emit(
@@ -108,9 +103,6 @@ class HonkDetailsCubit extends Cubit<HonkDetailsState> {
     required String activity,
     required String location,
     String? details,
-    required DateTime startsAt,
-    String? recurrenceRrule,
-    required String recurrenceTimezone,
     required int statusResetSeconds,
     required List<HonkStatusOption> statusOptions,
   }) async {
@@ -121,9 +113,6 @@ class HonkDetailsCubit extends Cubit<HonkDetailsState> {
           activity: activity,
           location: location,
           details: details,
-          startsAt: startsAt,
-          recurrenceRrule: recurrenceRrule,
-          recurrenceTimezone: recurrenceTimezone,
           statusResetSeconds: statusResetSeconds,
           statusOptions: statusOptions,
         )
@@ -147,6 +136,68 @@ class HonkDetailsCubit extends Cubit<HonkDetailsState> {
           emit(state.copyWith(isUpdating: false));
         }
       },
+    );
+  }
+
+  Future<void> approveJoinRequest(String userId) async {
+    final activityId = _activityId;
+    if (activityId == null) return;
+    emit(
+      state.copyWith(
+        processingApprovalIds: {...state.processingApprovalIds, userId},
+        actionError: null,
+      ),
+    );
+    final result = await _repository
+        .approveJoinRequest(activityId: activityId, userId: userId)
+        .run();
+    result.match(
+      (failure) => emit(
+        state.copyWith(
+          processingApprovalIds: state.processingApprovalIds.difference({
+            userId,
+          }),
+          actionError: failure,
+        ),
+      ),
+      (_) => emit(
+        state.copyWith(
+          processingApprovalIds: state.processingApprovalIds.difference({
+            userId,
+          }),
+        ),
+      ),
+    );
+  }
+
+  Future<void> denyJoinRequest(String userId) async {
+    final activityId = _activityId;
+    if (activityId == null) return;
+    emit(
+      state.copyWith(
+        processingApprovalIds: {...state.processingApprovalIds, userId},
+        actionError: null,
+      ),
+    );
+    final result = await _repository
+        .denyJoinRequest(activityId: activityId, userId: userId)
+        .run();
+    result.match(
+      (failure) => emit(
+        state.copyWith(
+          processingApprovalIds: state.processingApprovalIds.difference({
+            userId,
+          }),
+          actionError: failure,
+        ),
+      ),
+      (_) => emit(
+        state.copyWith(
+          processingApprovalIds: state.processingApprovalIds.difference({
+            userId,
+          }),
+        ),
+      ),
     );
   }
 

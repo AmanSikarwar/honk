@@ -55,12 +55,13 @@ extension JoinHonkStatePatterns on JoinHonkState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _Idle value)?  idle,TResult Function( _Loading value)?  loading,TResult Function( _Success value)?  success,TResult Function( _Failure value)?  failure,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _Idle value)?  idle,TResult Function( _Loading value)?  loading,TResult Function( _PendingApproval value)?  pendingApproval,TResult Function( _Success value)?  success,TResult Function( _Failure value)?  failure,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _Idle() when idle != null:
 return idle(_that);case _Loading() when loading != null:
-return loading(_that);case _Success() when success != null:
+return loading(_that);case _PendingApproval() when pendingApproval != null:
+return pendingApproval(_that);case _Success() when success != null:
 return success(_that);case _Failure() when failure != null:
 return failure(_that);case _:
   return orElse();
@@ -80,12 +81,13 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _Idle value)  idle,required TResult Function( _Loading value)  loading,required TResult Function( _Success value)  success,required TResult Function( _Failure value)  failure,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _Idle value)  idle,required TResult Function( _Loading value)  loading,required TResult Function( _PendingApproval value)  pendingApproval,required TResult Function( _Success value)  success,required TResult Function( _Failure value)  failure,}){
 final _that = this;
 switch (_that) {
 case _Idle():
 return idle(_that);case _Loading():
-return loading(_that);case _Success():
+return loading(_that);case _PendingApproval():
+return pendingApproval(_that);case _Success():
 return success(_that);case _Failure():
 return failure(_that);case _:
   throw StateError('Unexpected subclass');
@@ -104,12 +106,13 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _Idle value)?  idle,TResult? Function( _Loading value)?  loading,TResult? Function( _Success value)?  success,TResult? Function( _Failure value)?  failure,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _Idle value)?  idle,TResult? Function( _Loading value)?  loading,TResult? Function( _PendingApproval value)?  pendingApproval,TResult? Function( _Success value)?  success,TResult? Function( _Failure value)?  failure,}){
 final _that = this;
 switch (_that) {
 case _Idle() when idle != null:
 return idle(_that);case _Loading() when loading != null:
-return loading(_that);case _Success() when success != null:
+return loading(_that);case _PendingApproval() when pendingApproval != null:
+return pendingApproval(_that);case _Success() when success != null:
 return success(_that);case _Failure() when failure != null:
 return failure(_that);case _:
   return null;
@@ -128,11 +131,12 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function()?  loading,TResult Function( String activityId)?  success,TResult Function( MainFailure failure)?  failure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function()?  loading,TResult Function( String activityId)?  pendingApproval,TResult Function( String activityId)?  success,TResult Function( MainFailure failure)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Idle() when idle != null:
 return idle();case _Loading() when loading != null:
-return loading();case _Success() when success != null:
+return loading();case _PendingApproval() when pendingApproval != null:
+return pendingApproval(_that.activityId);case _Success() when success != null:
 return success(_that.activityId);case _Failure() when failure != null:
 return failure(_that.failure);case _:
   return orElse();
@@ -152,11 +156,12 @@ return failure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function()  loading,required TResult Function( String activityId)  success,required TResult Function( MainFailure failure)  failure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function()  loading,required TResult Function( String activityId)  pendingApproval,required TResult Function( String activityId)  success,required TResult Function( MainFailure failure)  failure,}) {final _that = this;
 switch (_that) {
 case _Idle():
 return idle();case _Loading():
-return loading();case _Success():
+return loading();case _PendingApproval():
+return pendingApproval(_that.activityId);case _Success():
 return success(_that.activityId);case _Failure():
 return failure(_that.failure);case _:
   throw StateError('Unexpected subclass');
@@ -175,11 +180,12 @@ return failure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function()?  loading,TResult? Function( String activityId)?  success,TResult? Function( MainFailure failure)?  failure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function()?  loading,TResult? Function( String activityId)?  pendingApproval,TResult? Function( String activityId)?  success,TResult? Function( MainFailure failure)?  failure,}) {final _that = this;
 switch (_that) {
 case _Idle() when idle != null:
 return idle();case _Loading() when loading != null:
-return loading();case _Success() when success != null:
+return loading();case _PendingApproval() when pendingApproval != null:
+return pendingApproval(_that.activityId);case _Success() when success != null:
 return success(_that.activityId);case _Failure() when failure != null:
 return failure(_that.failure);case _:
   return null;
@@ -252,6 +258,72 @@ String toString() {
 
 
 
+
+/// @nodoc
+
+
+class _PendingApproval implements JoinHonkState {
+  const _PendingApproval(this.activityId);
+  
+
+ final  String activityId;
+
+/// Create a copy of JoinHonkState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PendingApprovalCopyWith<_PendingApproval> get copyWith => __$PendingApprovalCopyWithImpl<_PendingApproval>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PendingApproval&&(identical(other.activityId, activityId) || other.activityId == activityId));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,activityId);
+
+@override
+String toString() {
+  return 'JoinHonkState.pendingApproval(activityId: $activityId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PendingApprovalCopyWith<$Res> implements $JoinHonkStateCopyWith<$Res> {
+  factory _$PendingApprovalCopyWith(_PendingApproval value, $Res Function(_PendingApproval) _then) = __$PendingApprovalCopyWithImpl;
+@useResult
+$Res call({
+ String activityId
+});
+
+
+
+
+}
+/// @nodoc
+class __$PendingApprovalCopyWithImpl<$Res>
+    implements _$PendingApprovalCopyWith<$Res> {
+  __$PendingApprovalCopyWithImpl(this._self, this._then);
+
+  final _PendingApproval _self;
+  final $Res Function(_PendingApproval) _then;
+
+/// Create a copy of JoinHonkState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? activityId = null,}) {
+  return _then(_PendingApproval(
+null == activityId ? _self.activityId : activityId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
 
 /// @nodoc
 

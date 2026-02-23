@@ -36,6 +36,12 @@ jobs:
       - name: Flutter Pub Upgrade
         run: flutter pub upgrade
 
+      - name: Extract .env from secrets
+        run: echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Generate env code
+        run: dart run build_runner build --delete-conflicting-outputs
+
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.keystore

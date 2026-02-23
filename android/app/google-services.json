@@ -12,7 +12,12 @@
           "package_name": "io.github.amansikarwar.honk"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "27942246161-faneobc4nmj1etlcptjmqkudl1iig6dv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCHI-XieZjorngMrvm2PZTESLdZEeUNzDE"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "27942246161-faneobc4nmj1etlcptjmqkudl1iig6dv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "27942246161-88ibe599f5ep0cp1j2lck7bg4pg1f6kh.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "io.github.amansikarwar.honk"
+              }
+            }
+          ]
         }
       }
     }

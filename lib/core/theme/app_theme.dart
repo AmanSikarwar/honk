@@ -6,7 +6,7 @@ import 'app_colors.dart';
 import 'app_spacing.dart';
 
 /// Central theme factory for Honk.
-/// Uses Material 3 with a custom electric-violet palette and Fredoka font.
+/// Uses Material 3 with a custom electric-violet palette and Advent Pro font.
 abstract final class AppTheme {
   static ThemeData get light => _build(brightness: Brightness.light);
   static ThemeData get dark => _build(brightness: Brightness.dark);
@@ -32,7 +32,7 @@ abstract final class AppTheme {
       brightness: brightness,
     );
 
-    // Typography — Fredoka for display/headlines, Nunito for body
+    // Typography — Advent Pro for display/headlines, Advent Pro for body
     final textTheme = _buildTextTheme(base.textTheme, colorScheme);
 
     return base.copyWith(
@@ -45,7 +45,7 @@ abstract final class AppTheme {
         systemOverlayStyle: isDark
             ? SystemUiOverlayStyle.light
             : SystemUiOverlayStyle.dark,
-        titleTextStyle: GoogleFonts.fredoka(
+        titleTextStyle: GoogleFonts.adventPro(
           fontSize: 22,
           fontWeight: FontWeight.w600,
           color: colorScheme.onSurface,
@@ -86,7 +86,7 @@ abstract final class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
-          textStyle: GoogleFonts.nunito(
+          textStyle: GoogleFonts.adventPro(
             fontSize: 16,
             fontWeight: FontWeight.w700,
           ),
@@ -98,7 +98,7 @@ abstract final class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
-          textStyle: GoogleFonts.nunito(
+          textStyle: GoogleFonts.adventPro(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -106,7 +106,7 @@ abstract final class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          textStyle: GoogleFonts.nunito(
+          textStyle: GoogleFonts.adventPro(
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -115,7 +115,7 @@ abstract final class AppTheme {
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
-        extendedTextStyle: GoogleFonts.nunito(
+        extendedTextStyle: GoogleFonts.adventPro(
           fontSize: 16,
           fontWeight: FontWeight.w700,
         ),
@@ -127,7 +127,7 @@ abstract final class AppTheme {
             : colorScheme.inverseSurface,
         contentTextStyle: TextStyle(
           color: isDark ? Colors.white : colorScheme.onInverseSurface,
-          fontFamily: 'Nunito',
+          fontFamily: GoogleFonts.adventPro().fontFamily,
         ),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -144,7 +144,7 @@ abstract final class AppTheme {
       ),
       chipTheme: ChipThemeData(
         shape: const StadiumBorder(),
-        labelStyle: GoogleFonts.nunito(
+        labelStyle: GoogleFonts.adventPro(
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
@@ -162,79 +162,79 @@ abstract final class AppTheme {
   }
 
   static TextTheme _buildTextTheme(TextTheme base, ColorScheme cs) {
-    final body = GoogleFonts.nunitoTextTheme(base);
+    final body = GoogleFonts.adventProTextTheme(base);
     return body.copyWith(
-      displayLarge: GoogleFonts.fredoka(
+      displayLarge: GoogleFonts.adventPro(
         fontSize: 57,
         fontWeight: FontWeight.w600,
         color: cs.onSurface,
       ),
-      displayMedium: GoogleFonts.fredoka(
+      displayMedium: GoogleFonts.adventPro(
         fontSize: 45,
         fontWeight: FontWeight.w600,
         color: cs.onSurface,
       ),
-      displaySmall: GoogleFonts.fredoka(
+      displaySmall: GoogleFonts.adventPro(
         fontSize: 36,
         fontWeight: FontWeight.w500,
         color: cs.onSurface,
       ),
-      headlineLarge: GoogleFonts.fredoka(
+      headlineLarge: GoogleFonts.adventPro(
         fontSize: 32,
         fontWeight: FontWeight.w600,
         color: cs.onSurface,
       ),
-      headlineMedium: GoogleFonts.fredoka(
+      headlineMedium: GoogleFonts.adventPro(
         fontSize: 28,
         fontWeight: FontWeight.w500,
         color: cs.onSurface,
       ),
-      headlineSmall: GoogleFonts.fredoka(
+      headlineSmall: GoogleFonts.adventPro(
         fontSize: 24,
         fontWeight: FontWeight.w500,
         color: cs.onSurface,
       ),
-      titleLarge: GoogleFonts.fredoka(
+      titleLarge: GoogleFonts.adventPro(
         fontSize: 22,
         fontWeight: FontWeight.w500,
         color: cs.onSurface,
       ),
-      titleMedium: GoogleFonts.nunito(
+      titleMedium: GoogleFonts.adventPro(
         fontSize: 16,
         fontWeight: FontWeight.w700,
         color: cs.onSurface,
       ),
-      titleSmall: GoogleFonts.nunito(
+      titleSmall: GoogleFonts.adventPro(
         fontSize: 14,
         fontWeight: FontWeight.w700,
         color: cs.onSurface,
       ),
-      bodyLarge: GoogleFonts.nunito(
+      bodyLarge: GoogleFonts.adventPro(
         fontSize: 16,
         fontWeight: FontWeight.w400,
         color: cs.onSurface,
       ),
-      bodyMedium: GoogleFonts.nunito(
+      bodyMedium: GoogleFonts.adventPro(
         fontSize: 14,
         fontWeight: FontWeight.w400,
         color: cs.onSurface,
       ),
-      bodySmall: GoogleFonts.nunito(
+      bodySmall: GoogleFonts.adventPro(
         fontSize: 12,
         fontWeight: FontWeight.w400,
         color: cs.onSurfaceVariant,
       ),
-      labelLarge: GoogleFonts.nunito(
+      labelLarge: GoogleFonts.adventPro(
         fontSize: 14,
         fontWeight: FontWeight.w700,
         color: cs.onSurface,
       ),
-      labelMedium: GoogleFonts.nunito(
+      labelMedium: GoogleFonts.adventPro(
         fontSize: 12,
         fontWeight: FontWeight.w700,
         color: cs.onSurface,
       ),
-      labelSmall: GoogleFonts.nunito(
+      labelSmall: GoogleFonts.adventPro(
         fontSize: 11,
         fontWeight: FontWeight.w600,
         color: cs.onSurfaceVariant,

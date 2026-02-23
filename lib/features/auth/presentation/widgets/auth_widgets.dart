@@ -99,7 +99,7 @@ class _AuthHeader extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Text(
             title,
-            style: GoogleFonts.fredoka(
+            style: GoogleFonts.adventPro(
               fontSize: 32,
               fontWeight: FontWeight.w600,
               color: Colors.white,
@@ -108,7 +108,7 @@ class _AuthHeader extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             subtitle,
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.adventPro(
               fontSize: 15,
               color: Colors.white.withValues(alpha: 0.8),
               fontWeight: FontWeight.w400,
@@ -239,7 +239,7 @@ class GoogleSignInButton extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 'G',
-                style: GoogleFonts.nunito(
+                style: GoogleFonts.adventPro(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: AppColors.brandPurple,

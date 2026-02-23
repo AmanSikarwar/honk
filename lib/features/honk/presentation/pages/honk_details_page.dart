@@ -6,8 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pretty_qr_code/pretty_qr_code.dart';
 
-import '../../../../common/widgets/honk_chip.dart';
-import '../../../../common/widgets/user_avatar.dart';
+import '../../../../common/widgets/comic_ui.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -179,39 +178,66 @@ class _DetailsScaffold extends StatelessWidget {
     final cubit = context.read<HonkDetailsCubit>();
 
     return Scaffold(
+      backgroundColor: AppColors.comicLavender,
       appBar: AppBar(
-        title: Text(activity.activity, overflow: TextOverflow.ellipsis),
+        backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        title: const ComicBrandMark(fontSize: 24),
         actions: [
-          if (isCreator) ...[
+          if (isCreator)
             IconButton(
               tooltip: 'Share invite',
               icon: const Icon(Icons.share_outlined),
               onPressed: () => _showShareSheet(context, activity),
             ),
-            IconButton(
-              tooltip: 'Edit',
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: state.isUpdating
-                  ? null
-                  : () => _showEditSheet(context, details),
-            ),
-            PopupMenuButton<_Action>(
-              icon: const Icon(Icons.more_vert),
-              onSelected: (a) {
-                if (a == _Action.rotate) cubit.rotateInvite(activityId);
-              },
-              itemBuilder: (_) => [
+          PopupMenuButton<_Action>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (a) async {
+              if (a == _Action.rotate) {
+                cubit.rotateInvite(activityId);
+                return;
+              }
+              if (a == _Action.edit) {
+                if (!state.isUpdating) _showEditSheet(context, details);
+                return;
+              }
+              if (a == _Action.delete) {
+                await _BottomActions(
+                  activityId: activityId,
+                  isCreator: true,
+                  state: state,
+                ).confirmDelete(context, cubit);
+                return;
+              }
+              await _BottomActions(
+                activityId: activityId,
+                isCreator: false,
+                state: state,
+              ).confirmLeave(context, cubit);
+            },
+            itemBuilder: (_) => [
+              if (isCreator)
+                const PopupMenuItem(
+                  value: _Action.edit,
+                  child: Text('Edit honk'),
+                ),
+              if (isCreator)
                 const PopupMenuItem(
                   value: _Action.rotate,
-                  child: ListTile(
-                    leading: Icon(Icons.refresh),
-                    title: Text('Rotate invite code'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
+                  child: Text('Rotate invite code'),
                 ),
-              ],
-            ),
-          ],
+              if (isCreator)
+                const PopupMenuItem(
+                  value: _Action.delete,
+                  child: Text('Delete honk'),
+                ),
+              if (!isCreator)
+                const PopupMenuItem(
+                  value: _Action.leave,
+                  child: Text('Leave honk'),
+                ),
+            ],
+          ),
         ],
       ),
       body: ListView(
@@ -227,7 +253,6 @@ class _DetailsScaffold extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             _PendingRequestsCard(
               pendingParticipants: details.pendingParticipants,
-              activityId: activityId,
               processingIds: state.processingApprovalIds,
             ),
           ],
@@ -245,11 +270,6 @@ class _DetailsScaffold extends StatelessWidget {
         activityId: activityId,
         currentParticipant: me,
         nowUtc: nowUtc,
-      ),
-      bottomNavigationBar: _BottomActions(
-        activityId: activityId,
-        isCreator: isCreator,
-        state: state,
       ),
     );
   }
@@ -307,7 +327,7 @@ class _DetailsScaffold extends StatelessWidget {
   }
 }
 
-enum _Action { rotate }
+enum _Action { rotate, edit, delete, leave }
 
 // ── Activity info card ────────────────────────────────────────────────────────
 
@@ -317,32 +337,68 @@ class _ActivityInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _InfoRow(Icons.place_outlined, activity.location),
-            if (activity.details?.isNotEmpty == true) ...[
-              const SizedBox(height: AppSpacing.sm),
-              _InfoRow(Icons.info_outline, activity.details!),
+    return ComicCardContainer(
+      backgroundColor: AppColors.comicPanel,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: ComicOutlinedText(
+                  activity.activity.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.adventPro(
+                    fontSize: 52,
+                    fontWeight: FontWeight.w700,
+                    height: 1,
+                  ),
+                  strokeWidth: 5,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              const ComicHornIcon(size: 54),
             ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _InfoRow(Icons.place_outlined, activity.location),
+          if (activity.details?.isNotEmpty == true) ...[
             const SizedBox(height: AppSpacing.sm),
-            _InfoRow(
-              Icons.timer_outlined,
-              'Status resets after ${_fmt(activity.statusResetSeconds)}',
+            _InfoRow(Icons.info_outline, activity.details!),
+          ],
+          const SizedBox(height: AppSpacing.sm),
+          _InfoRow(
+            Icons.timer_outlined,
+            'Status resets after ${_fmt(activity.statusResetSeconds)}',
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
             ),
-            const Divider(height: AppSpacing.lg),
-            Row(
+            decoration: BoxDecoration(
+              color: AppColors.comicPanelSoft,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.comicInk, width: 1.7),
+            ),
+            child: Row(
               children: [
-                Icon(Icons.key_rounded, size: 16, color: cs.onSurfaceVariant),
+                const Icon(
+                  Icons.key_rounded,
+                  size: 16,
+                  color: AppColors.comicInk,
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
                     activity.inviteCode,
-                    style: GoogleFonts.sourceCodePro(fontSize: 13),
+                    style: GoogleFonts.adventPro(
+                      fontSize: 13,
+                      color: AppColors.comicInk,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 IconButton(
@@ -359,8 +415,8 @@ class _ActivityInfoCard extends StatelessWidget {
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -379,19 +435,33 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
-        ),
-      ],
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.comicPanelSoft,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.comicInk, width: 1.7),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: AppColors.comicInk),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.adventPro(
+                fontSize: 14,
+                color: AppColors.comicInk,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -401,91 +471,78 @@ class _InfoRow extends StatelessWidget {
 class _PendingRequestsCard extends StatelessWidget {
   const _PendingRequestsCard({
     required this.pendingParticipants,
-    required this.activityId,
     required this.processingIds,
   });
   final List<HonkParticipant> pendingParticipants;
-  final String activityId;
   final Set<String> processingIds;
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<HonkDetailsCubit>();
-    return Card(
+    return ComicCardContainer(
+      backgroundColor: AppColors.comicPanelDark,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.xs,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.statusAmberBg,
-                    borderRadius: BorderRadius.circular(AppRadius.chip),
-                  ),
-                  child: Text(
-                    '${pendingParticipants.length} pending',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.statusAmber,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Text(
-                  'Join requests',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
-            ),
+          Row(
+            children: [
+              ComicOutlinedText(
+                'PENDING ${pendingParticipants.length}',
+                style: GoogleFonts.adventPro(fontSize: 22),
+                strokeWidth: 4,
+              ),
+            ],
           ),
           ...pendingParticipants.map((p) {
             final processing = processingIds.contains(p.userId);
-            return ListTile(
-              leading: UserAvatar(
-                username: p.username,
-                profileUrl: p.profileUrl,
+            return Container(
+              margin: const EdgeInsets.only(top: AppSpacing.sm),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
               ),
-              title: Text(p.fullName ?? p.username),
-              subtitle: Text(
-                '@${p.username}',
-                style: Theme.of(context).textTheme.bodySmall,
+              decoration: BoxDecoration(
+                color: AppColors.comicPanelSoft,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.comicInk, width: 1.7),
               ),
-              trailing: processing
-                  ? const SizedBox(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      (p.fullName ?? p.username).toUpperCase(),
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.adventPro(
+                        color: AppColors.comicInk,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                  if (processing)
+                    const SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Row(
-                      mainAxisSize: MainAxisSize.min,
+                  else
+                    Row(
                       children: [
                         _ActionBtn(
-                          icon: Icons.check_rounded,
-                          color: AppColors.statusGreen,
-                          tooltip: 'Approve',
+                          label: 'ACCEPT',
+                          fillColor: AppColors.comicSuccess,
                           onPressed: () => cubit.approveJoinRequest(p.userId),
                         ),
                         const SizedBox(width: AppSpacing.xs),
                         _ActionBtn(
-                          icon: Icons.close_rounded,
-                          color: AppColors.statusRed,
-                          tooltip: 'Deny',
+                          label: 'DECLINE',
+                          fillColor: AppColors.comicDanger,
                           onPressed: () => cubit.denyJoinRequest(p.userId),
                         ),
                       ],
                     ),
+                ],
+              ),
             );
           }),
         ],
@@ -496,30 +553,37 @@ class _PendingRequestsCard extends StatelessWidget {
 
 class _ActionBtn extends StatelessWidget {
   const _ActionBtn({
-    required this.icon,
-    required this.color,
-    required this.tooltip,
+    required this.label,
+    required this.fillColor,
     required this.onPressed,
   });
-  final IconData icon;
-  final Color color;
-  final String tooltip;
+  final String label;
+  final Color fillColor;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(AppRadius.xs),
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.xs),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(AppRadius.xs),
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(100),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm + 2,
+          vertical: 6,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: AppColors.comicInk, width: 1.8),
+        ),
+        child: ComicOutlinedText(
+          label,
+          style: GoogleFonts.adventPro(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
           ),
-          child: Icon(icon, color: color, size: 20),
+          strokeWidth: 2.7,
+          fillColor: fillColor,
         ),
       ),
     );
@@ -542,22 +606,17 @@ class _ParticipantsList extends StatelessWidget {
   Widget build(BuildContext context) {
     final labelsByKey = {for (final o in statusOptions) o.statusKey: o.label};
 
-    return Card(
+    return ComicCardContainer(
+      backgroundColor: AppColors.comicPanel,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.xs,
-            ),
-            child: Text(
-              'Members (${participants.length})',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+          ComicOutlinedText(
+            'MEMBERS (${participants.length})',
+            style: GoogleFonts.adventPro(fontSize: 24),
+            strokeWidth: 4,
           ),
+          const SizedBox(height: AppSpacing.sm),
           ...participants.map((p) {
             final statusLabel =
                 labelsByKey[p.effectiveStatusKey] ?? p.effectiveStatusKey;
@@ -569,35 +628,50 @@ class _ParticipantsList extends StatelessWidget {
             final countdownText = timeLeft != null
                 ? _fmtDuration(timeLeft)
                 : null;
+            final badgeText = _statusText(statusLabel);
+            final badgeColor = _statusColor(badgeText);
 
-            return ListTile(
-              leading: UserAvatar(
-                username: p.username,
-                profileUrl: p.profileUrl,
+            return Container(
+              margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
               ),
-              title: Row(
+              decoration: BoxDecoration(
+                color: AppColors.comicPanelSoft,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.comicInk, width: 1.7),
+              ),
+              child: Row(
                 children: [
                   Expanded(
                     child: Text(
-                      p.fullName ?? p.username,
+                      (p.fullName ?? p.username).toUpperCase(),
                       overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.adventPro(
+                        color: AppColors.comicInk,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 17,
+                      ),
                     ),
                   ),
-                  if (p.isCreator) ...[
-                    const SizedBox(width: 4),
-                    const Text('⭐', style: TextStyle(fontSize: 12)),
+                  if (countdownText != null) ...[
+                    Text(
+                      countdownText,
+                      style: GoogleFonts.adventPro(
+                        fontSize: 12,
+                        color: AppColors.comicInk.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
                   ],
+                  ComicOutlinedText(
+                    badgeText,
+                    style: GoogleFonts.adventPro(fontSize: 28),
+                    strokeWidth: 3.2,
+                    fillColor: badgeColor,
+                  ),
                 ],
-              ),
-              subtitle: Text(
-                '@${p.username}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              trailing: HonkChip(
-                label: statusLabel,
-                countdown: countdownText,
-                color: _chipColor(statusLabel),
-                bgColor: _chipBgColor(statusLabel),
               ),
             );
           }),
@@ -615,24 +689,18 @@ class _ParticipantsList extends StatelessWidget {
     return '${s}s';
   }
 
-  Color _chipColor(String label) {
+  String _statusText(String label) {
     final l = label.toLowerCase();
-    if (l.contains('go') || l.contains('yes')) return AppColors.statusGreen;
-    if (l.contains('maybe') || l.contains('possibly')) {
-      return AppColors.statusAmber;
+    if (l.contains('go') || l.contains('yes') || l.contains('in')) return 'IN';
+    if (l.contains('no') || l.contains('out') || l.contains('not')) {
+      return 'OUT';
     }
-    if (l.contains('no') || l.contains('not')) return AppColors.statusRed;
-    return AppColors.statusPurple;
+    return label.toUpperCase();
   }
 
-  Color _chipBgColor(String label) {
-    final l = label.toLowerCase();
-    if (l.contains('go') || l.contains('yes')) return AppColors.statusGreenBg;
-    if (l.contains('maybe') || l.contains('possibly')) {
-      return AppColors.statusAmberBg;
-    }
-    if (l.contains('no') || l.contains('not')) return AppColors.statusRedBg;
-    return AppColors.statusPurpleBg;
+  Color _statusColor(String status) {
+    if (status == 'OUT') return AppColors.comicDanger;
+    return AppColors.comicSuccess;
   }
 }
 
@@ -666,10 +734,18 @@ class _StatusFab extends StatelessWidget {
                   .firstOrNull
                   ?.label ??
               currentStatus)
-        : 'Honk!';
+        : 'Honk';
 
     return FloatingActionButton.extended(
       onPressed: isSaving ? null : () => _showStatusSheet(context),
+      backgroundColor: AppColors.comicPanelDark,
+      foregroundColor: Colors.white,
+      shape: StadiumBorder(
+        side: BorderSide(
+          color: AppColors.comicInk.withValues(alpha: 0.85),
+          width: 2,
+        ),
+      ),
       icon: isSaving
           ? const SizedBox(
               width: 20,
@@ -679,14 +755,18 @@ class _StatusFab extends StatelessWidget {
                 color: Colors.white,
               ),
             )
-          : const Text('📣', style: TextStyle(fontSize: 20)),
-      label: Text(isSaving ? 'Updating…' : currentLabel),
+          : const ComicHornIcon(size: 25),
+      label: Text(
+        isSaving ? 'Updating...' : currentLabel.toUpperCase(),
+        style: GoogleFonts.adventPro(fontWeight: FontWeight.w700),
+      ),
     );
   }
 
   void _showStatusSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
+      backgroundColor: Colors.transparent,
       builder: (sheetCtx) => BlocProvider.value(
         value: context.read<HonkDetailsCubit>(),
         child: _StatusPickerSheet(
@@ -713,60 +793,72 @@ class _StatusPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
+        AppSpacing.md,
         AppSpacing.sm,
-        AppSpacing.lg,
+        AppSpacing.md,
         AppSpacing.xl,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Set your status',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Others will see your status in real time.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          ...statusOptions.map((opt) {
-            final isCurrent = opt.statusKey == currentStatusKey;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  style: isCurrent
-                      ? null
-                      : FilledButton.styleFrom(
-                          backgroundColor: cs.surfaceContainerHigh,
-                          foregroundColor: cs.onSurface,
+      child: ComicCardContainer(
+        backgroundColor: AppColors.comicPanel,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ComicOutlinedText(
+              'SET YOUR STATUS',
+              style: GoogleFonts.adventPro(fontSize: 24),
+              strokeWidth: 4,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            ...statusOptions.map((opt) {
+              final isCurrent = opt.statusKey == currentStatusKey;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      backgroundColor: isCurrent
+                          ? Colors.white
+                          : AppColors.comicPanelSoft,
+                      side: const BorderSide(
+                        color: AppColors.comicInk,
+                        width: 2,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      context.read<HonkDetailsCubit>().setStatus(
+                        activityId: activityId,
+                        statusKey: opt.statusKey,
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ComicOutlinedText(
+                            opt.label.toUpperCase(),
+                            style: GoogleFonts.adventPro(fontSize: 20),
+                            strokeWidth: 3,
+                            fillColor: AppColors.comicInk,
+                          ),
                         ),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    context.read<HonkDetailsCubit>().setStatus(
-                      activityId: activityId,
-                      statusKey: opt.statusKey,
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      Expanded(child: Text(opt.label)),
-                      if (isCurrent)
-                        const Icon(Icons.check_circle_rounded, size: 18),
-                    ],
+                        if (isCurrent)
+                          const Icon(Icons.check_circle_rounded, size: 18),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          }),
-        ],
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
@@ -797,7 +889,7 @@ class _BottomActions extends StatelessWidget {
             ? OutlinedButton.icon(
                 onPressed: state.isDeleting
                     ? null
-                    : () => _confirmDelete(context, cubit),
+                    : () => confirmDelete(context, cubit),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Theme.of(context).colorScheme.error,
                   side: BorderSide(color: Theme.of(context).colorScheme.error),
@@ -814,7 +906,7 @@ class _BottomActions extends StatelessWidget {
             : OutlinedButton.icon(
                 onPressed: state.isLeaving
                     ? null
-                    : () => _confirmLeave(context, cubit),
+                    : () => confirmLeave(context, cubit),
                 icon: state.isLeaving
                     ? const SizedBox(
                         width: 16,
@@ -828,7 +920,7 @@ class _BottomActions extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmDelete(
+  Future<void> confirmDelete(
     BuildContext context,
     HonkDetailsCubit cubit,
   ) async {
@@ -855,7 +947,7 @@ class _BottomActions extends StatelessWidget {
     if (confirmed == true) await cubit.deleteActivity(activityId);
   }
 
-  Future<void> _confirmLeave(
+  Future<void> confirmLeave(
     BuildContext context,
     HonkDetailsCubit cubit,
   ) async {
@@ -1145,7 +1237,7 @@ class _CopyRow extends StatelessWidget {
               Text(label, style: Theme.of(context).textTheme.labelSmall),
               Text(
                 value,
-                style: GoogleFonts.sourceCodePro(fontSize: 13),
+                style: GoogleFonts.adventPro(fontSize: 13),
                 overflow: TextOverflow.ellipsis,
               ),
             ],

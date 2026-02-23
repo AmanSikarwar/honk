@@ -106,7 +106,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                       Expanded(
                         child: Text(
                           widget.email,
-                          style: GoogleFonts.nunito(
+                          style: GoogleFonts.adventPro(
                             fontWeight: FontWeight.w700,
                             color: AppColors.brandPurple,
                           ),
@@ -127,7 +127,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                   enabled: !loading,
                   maxLength: 8,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.adventPro(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 6,

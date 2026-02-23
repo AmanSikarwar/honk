@@ -36,4 +36,13 @@ abstract final class AppColors {
   static const countdownNormal = Color(0xFF7C3AED);
   static const countdownWarning = Color(0xFFF59E0B);
   static const countdownDanger = Color(0xFFEF4444);
+
+  // Comic UI palette (new mock design)
+  static const comicLavender = Color(0xFFC59DDC);
+  static const comicPanel = Color(0xFFB45FD8);
+  static const comicPanelDark = Color(0xFFA84CCC);
+  static const comicPanelSoft = Color(0xFFD8B6EA);
+  static const comicInk = Color(0xFF120212);
+  static const comicDanger = Color(0xFFFF5D65);
+  static const comicSuccess = Color(0xFFA954D5);
 }

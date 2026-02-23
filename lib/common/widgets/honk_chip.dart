@@ -56,7 +56,7 @@ class HonkChip extends StatelessWidget {
   Widget _labelText(Color fg) {
     return Text(
       label,
-      style: GoogleFonts.nunito(
+      style: GoogleFonts.adventPro(
         fontSize: 12,
         fontWeight: FontWeight.w700,
         color: fg,
@@ -68,7 +68,7 @@ class HonkChip extends StatelessWidget {
     // Near-expiry colouring: turn amber/red based on remaining seconds
     return Text(
       text,
-      style: GoogleFonts.nunito(
+      style: GoogleFonts.adventPro(
         fontSize: 10,
         fontWeight: FontWeight.w600,
         color: _countdownColor(text),

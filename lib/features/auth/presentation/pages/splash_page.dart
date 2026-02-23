@@ -1,173 +1,120 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+import '../../../../common/widgets/comic_ui.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 
-/// Full-screen onboarding / splash shown to first-time unauthenticated users.
-class SplashPage extends StatelessWidget {
+class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
 
   @override
+  State<SplashPage> createState() => _SplashPageState();
+}
+
+class _SplashPageState extends State<SplashPage> {
+  Timer? _revealTimer;
+  bool _showContinue = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _revealTimer = Timer(const Duration(milliseconds: 700), () {
+      if (!mounted) return;
+      setState(() => _showContinue = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _revealTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final screen = MediaQuery.of(context).size;
+    final logoWidth = (screen.width * 0.48).clamp(240.0, 480.0);
+    final ctaWidth = (screen.width * 0.46).clamp(200.0, 420.0);
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: SystemUiOverlayStyle.dark,
       child: Scaffold(
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Background gradient
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.gradientStart,
-                    AppColors.gradientMid,
-                    AppColors.gradientEnd,
-                  ],
-                ),
-              ),
-            ),
-            // Content
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl,
-                  vertical: AppSpacing.xl,
-                ),
-                child: Column(
-                  children: [
-                    const Spacer(flex: 2),
-                    // Icon / wordmark
-                    const _HonkLogo(),
-                    const SizedBox(height: AppSpacing.lg),
-                    // Tagline
-                    Text(
-                      'Group plans,\nzero confusion.',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.nunito(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white.withValues(alpha: 0.85),
-                        height: 1.5,
+        backgroundColor: AppColors.comicLavender,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: Align(
+                      alignment: const Alignment(0, 0.03),
+                      child: SizedBox(
+                        width: logoWidth,
+                        child: ComicBurstLogo(width: logoWidth),
                       ),
                     ),
-                    const Spacer(flex: 3),
-                    // CTAs
-                    _PrimaryButton(
-                      label: 'Get started',
-                      onPressed: () => const SignUpRoute().push(context),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _SecondaryButton(
-                      label: 'Sign in',
+                  ),
+                ),
+                AnimatedOpacity(
+                  opacity: _showContinue ? 1 : 0,
+                  duration: const Duration(milliseconds: 320),
+                  curve: Curves.easeOut,
+                  child: AnimatedSlide(
+                    duration: const Duration(milliseconds: 320),
+                    curve: Curves.easeOut,
+                    offset: _showContinue ? Offset.zero : const Offset(0, 0.15),
+                    child: _ContinueButton(
+                      width: ctaWidth,
                       onPressed: () => const LoginRoute().push(context),
                     ),
-                    const SizedBox(height: AppSpacing.md),
-                  ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: AppSpacing.xl),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _HonkLogo extends StatelessWidget {
-  const _HonkLogo();
+class _ContinueButton extends StatelessWidget {
+  const _ContinueButton({required this.width, required this.onPressed});
+
+  final double width;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 100,
-          height: 100,
+    return Material(
+      color: AppColors.comicPanel,
+      borderRadius: BorderRadius.circular(42),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(42),
+        onTap: onPressed,
+        child: Ink(
+          width: width,
+          height: 92,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(42),
+            border: Border.all(color: AppColors.comicInk, width: 3),
           ),
           child: const Center(
-            child: Text('📣', style: TextStyle(fontSize: 52)),
+            child: ComicOutlinedIcon(
+              icon: FontAwesomeIcons.arrowRightLong,
+              strokeColor: AppColors.comicInk,
+              size: 52,
+              fillColor: Colors.white,
+            ),
           ),
         ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          'HONK',
-          style: GoogleFonts.fredoka(
-            fontSize: 52,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-            letterSpacing: 4,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PrimaryButton extends StatelessWidget {
-  const _PrimaryButton({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: AppColors.brandPurple,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.md),
-          ),
-          textStyle: GoogleFonts.nunito(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        child: Text(label),
-      ),
-    );
-  }
-}
-
-class _SecondaryButton extends StatelessWidget {
-  const _SecondaryButton({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          side: const BorderSide(color: Colors.white54, width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.md),
-          ),
-          textStyle: GoogleFonts.nunito(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        child: Text(label),
       ),
     );
   }

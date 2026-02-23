@@ -116,7 +116,7 @@ class _JoinStateView extends StatelessWidget {
               const SizedBox(height: AppSpacing.lg),
               Text(
                 title,
-                style: GoogleFonts.fredoka(
+                style: GoogleFonts.adventPro(
                   fontSize: 32,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
@@ -128,7 +128,7 @@ class _JoinStateView extends StatelessWidget {
                 child: Text(
                   subtitle,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.adventPro(
                     fontSize: 16,
                     color: Colors.white.withValues(alpha: 0.8),
                   ),
@@ -139,7 +139,10 @@ class _JoinStateView extends StatelessWidget {
                 const SizedBox(
                   width: 32,
                   height: 32,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 3,
+                  ),
                 ),
               ],
             ],
@@ -181,7 +184,7 @@ class _JoinFailureView extends StatelessWidget {
                 const SizedBox(height: AppSpacing.lg),
                 Text(
                   'Couldn\'t join',
-                  style: GoogleFonts.fredoka(
+                  style: GoogleFonts.adventPro(
                     fontSize: 32,
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -191,7 +194,7 @@ class _JoinFailureView extends StatelessWidget {
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.adventPro(
                     fontSize: 14,
                     color: Colors.white.withValues(alpha: 0.75),
                   ),

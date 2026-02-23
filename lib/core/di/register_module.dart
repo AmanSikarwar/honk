@@ -24,6 +24,5 @@ abstract class RegisterModule {
       FlutterLocalNotificationsPlugin();
 
   @preResolve
-  Future<SharedPreferences> get sharedPreferences =>
-      SharedPreferences.getInstance();
+  Future<SharedPreferences> get sharedPreferences => SharedPreferences.getInstance();
 }

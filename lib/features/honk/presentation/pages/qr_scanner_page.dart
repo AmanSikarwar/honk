@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../core/router/app_router.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../cubit/join_honk_cubit.dart';
 
 class QrScannerPage extends StatefulWidget {
@@ -14,8 +16,7 @@ class QrScannerPage extends StatefulWidget {
   State<QrScannerPage> createState() => _QrScannerPageState();
 }
 
-class _QrScannerPageState extends State<QrScannerPage>
-    with WidgetsBindingObserver {
+class _QrScannerPageState extends State<QrScannerPage> with WidgetsBindingObserver {
   late final MobileScannerController _controller;
   StreamSubscription<Object?>? _subscription;
   bool _didScan = false;
@@ -66,56 +67,51 @@ class _QrScannerPageState extends State<QrScannerPage>
     context.read<JoinHonkCubit>().joinByCode(code);
   }
 
-  /// Accepts either the bare invite code or the full deep-link URL.
   String? _extractCode(String raw) {
     const prefix = 'https://honkapp.app/join/';
     if (raw.startsWith(prefix)) {
       final code = raw.substring(prefix.length).trim();
       return code.isEmpty ? null : code;
     }
-    final trimmed = raw.trim();
-    return trimmed.isEmpty ? null : trimmed;
+    return raw.trim().isEmpty ? null : raw.trim();
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<JoinHonkCubit, JoinHonkState>(
-      listener: (context, state) {
+      listener: (ctx, state) {
         state.mapOrNull(
-          success: (s) =>
-              HonkDetailsRoute(activityId: s.activityId).go(context),
+          success: (s) => HonkDetailsRoute(activityId: s.activityId).go(ctx),
           failure: (f) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(f.failure.toString())));
-            // Allow scanning again after a failure.
+            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(f.failure.toString())));
             _didScan = false;
             unawaited(_controller.start());
           },
         );
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Scan QR Code'),
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
-        ),
         backgroundColor: Colors.black,
         body: BlocBuilder<JoinHonkCubit, JoinHonkState>(
-          builder: (context, state) {
-            final isLoading = state.maybeMap(
-              loading: (_) => true,
-              orElse: () => false,
-            );
+          builder: (ctx, state) {
+            final isLoading = state.maybeMap(loading: (_) => true, orElse: () => false);
             return Stack(
+              fit: StackFit.expand,
               children: [
                 MobileScanner(controller: _controller, onDetect: _onBarcode),
-                // Dimmed overlay with a clear scanning window.
                 _ScanOverlay(),
+                // Back button
+                Positioned(
+                  top: MediaQuery.of(ctx).padding.top + AppSpacing.sm,
+                  left: AppSpacing.md,
+                  child: _BackBtn(),
+                ),
+                // Bottom status toast
                 if (isLoading)
-                  const ColoredBox(
-                    color: Colors.black54,
-                    child: Center(child: CircularProgressIndicator()),
+                  Positioned(
+                    bottom: MediaQuery.of(ctx).padding.bottom + AppSpacing.xl,
+                    left: AppSpacing.xl,
+                    right: AppSpacing.xl,
+                    child: const _StatusToast(label: 'Joining…'),
                   ),
               ],
             );
@@ -126,25 +122,73 @@ class _QrScannerPageState extends State<QrScannerPage>
   }
 }
 
-// ── Scanning overlay ──────────────────────────────────────────────────────────
+// ── Back button ───────────────────────────────────────────────────────────────
+
+class _BackBtn extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).pop(),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: const Icon(Icons.close, color: Colors.white, size: 22),
+      ),
+    );
+  }
+}
+
+// ── Status toast ──────────────────────────────────────────────────────────────
+
+class _StatusToast extends StatelessWidget {
+  const _StatusToast({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.brandPurple,
+        borderRadius: BorderRadius.circular(AppRadius.chip),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Scan overlay ──────────────────────────────────────────────────────────────
 
 class _ScanOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
-      builder: (context, constraints) {
+      builder: (ctx, constraints) {
         final side = constraints.maxWidth * 0.68;
         final left = (constraints.maxWidth - side) / 2;
         final top = (constraints.maxHeight - side) / 2 - 40;
         return Stack(
           children: [
-            // Dark mask — four rectangles around the cutout.
             Positioned.fill(
-              child: CustomPaint(
-                painter: _OverlayPainter(Rect.fromLTWH(left, top, side, side)),
-              ),
+              child: CustomPaint(painter: _OverlayPainter(Rect.fromLTWH(left, top, side, side))),
             ),
-            // Corner brackets.
             Positioned(
               left: left,
               top: top,
@@ -152,17 +196,14 @@ class _ScanOverlay extends StatelessWidget {
               height: side,
               child: const _CornerBrackets(),
             ),
-            // Label below the window.
             Positioned(
               left: 0,
               right: 0,
-              top: top + side + 20,
+              top: top + side + AppSpacing.lg,
               child: Text(
                 'Point camera at a Honk QR code',
                 textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
               ),
             ),
           ],
@@ -173,17 +214,15 @@ class _ScanOverlay extends StatelessWidget {
 }
 
 class _OverlayPainter extends CustomPainter {
-  _OverlayPainter(this.cutout);
-
+  const _OverlayPainter(this.cutout);
   final Rect cutout;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = Colors.black54;
-    final full = Rect.fromLTWH(0, 0, size.width, size.height);
     final path = Path()
-      ..addRect(full)
-      ..addRRect(RRect.fromRectAndRadius(cutout, const Radius.circular(12)))
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..addRRect(RRect.fromRectAndRadius(cutout, const Radius.circular(16)))
       ..fillType = PathFillType.evenOdd;
     canvas.drawPath(path, paint);
   }
@@ -197,25 +236,17 @@ class _CornerBrackets extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const len = 24.0;
-    const thick = 3.0;
+    const len = 28.0;
+    const thick = 3.5;
     const color = Colors.white;
-    const r = Radius.circular(4);
+    const r = Radius.circular(6);
     return Stack(
       children: [
-        // Top-left
         Positioned(
           top: 0,
           left: 0,
-          child: _Bracket(
-            len: len,
-            thick: thick,
-            color: color,
-            radius: r,
-            corner: _Corner.topLeft,
-          ),
+          child: _Bracket(len: len, thick: thick, color: color, radius: r, corner: _Corner.topLeft),
         ),
-        // Top-right
         Positioned(
           top: 0,
           right: 0,
@@ -227,7 +258,6 @@ class _CornerBrackets extends StatelessWidget {
             corner: _Corner.topRight,
           ),
         ),
-        // Bottom-left
         Positioned(
           bottom: 0,
           left: 0,
@@ -239,7 +269,6 @@ class _CornerBrackets extends StatelessWidget {
             corner: _Corner.bottomLeft,
           ),
         ),
-        // Bottom-right
         Positioned(
           bottom: 0,
           right: 0,
@@ -289,7 +318,7 @@ class _Bracket extends StatelessWidget {
 }
 
 class _BracketPainter extends CustomPainter {
-  _BracketPainter({
+  const _BracketPainter({
     required this.len,
     required this.thick,
     required this.color,
@@ -310,7 +339,6 @@ class _BracketPainter extends CustomPainter {
       ..strokeWidth = thick
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
-
     final path = Path();
     switch (corner) {
       case _Corner.topLeft:

@@ -10,6 +10,7 @@ import 'package:honk/core/deep_link/deep_link_handler.dart';
 import 'package:honk/core/di/injection.dart';
 import 'package:honk/core/env/env.dart';
 import 'package:honk/core/router/app_router.dart';
+import 'package:honk/core/theme/app_theme.dart';
 import 'package:honk/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:honk/features/notifications/domain/repositories/i_notification_repository.dart';
 import 'package:honk/features/notifications/domain/services/i_notification_runtime_service.dart';
@@ -219,25 +220,9 @@ class _HonkAppState extends State<HonkApp> {
       child: MaterialApp.router(
         title: 'Honk',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          useMaterial3: true,
-          inputDecorationTheme: const InputDecorationTheme(
-            border: OutlineInputBorder(),
-            filled: true,
-          ),
-        ),
-        darkTheme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.purpleAccent,
-            brightness: Brightness.dark,
-          ),
-          useMaterial3: true,
-          inputDecorationTheme: const InputDecorationTheme(
-            border: OutlineInputBorder(),
-            filled: true,
-          ),
-        ),
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: ThemeMode.system,
         routerConfig: _router,
       ),
     );

@@ -24,17 +24,14 @@ class AuthWrapper extends StatelessWidget {
       },
       builder: (context, state) {
         return state.when(
-          initial: () =>
-              const Scaffold(body: Center(child: CircularProgressIndicator())),
-          loading: () =>
-              const Scaffold(body: Center(child: CircularProgressIndicator())),
+          initial: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+          loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
           authenticated: (user) => child,
           unauthenticated: () => const LoginPage(),
           emailVerificationRequired: (email) => const LoginPage(),
           passwordResetEmailSent: () => const LoginPage(),
           passwordUpdated: () => const LoginPage(),
-          passwordResetReady: (user) =>
-              const LoginPage(), // Will be redirected by router
+          passwordResetReady: (user) => const LoginPage(), // Will be redirected by router
           error: (failure) => const LoginPage(),
         );
       },

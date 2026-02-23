@@ -10,8 +10,7 @@ part 'notification_sync_state.dart';
 
 @injectable
 class NotificationSyncCubit extends Cubit<NotificationSyncState> {
-  NotificationSyncCubit(this._notificationRepository)
-    : super(const NotificationSyncState.idle());
+  NotificationSyncCubit(this._notificationRepository) : super(const NotificationSyncState.idle());
 
   final INotificationRepository _notificationRepository;
 

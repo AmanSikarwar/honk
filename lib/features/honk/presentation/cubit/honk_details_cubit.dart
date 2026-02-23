@@ -24,62 +24,38 @@ class HonkDetailsCubit extends Cubit<HonkDetailsState> {
     _activityId = activityId;
     _sub?.cancel();
     emit(const HonkDetailsState(isLoading: true));
-    _sub = _repository.watchActivityDetails(activityId: activityId).listen((
-      result,
-    ) {
+    _sub = _repository.watchActivityDetails(activityId: activityId).listen((result) {
       result.match(
-        (failure) =>
-            emit(state.copyWith(isLoading: false, loadFailure: failure)),
-        (details) => emit(
-          state.copyWith(isLoading: false, details: details, loadFailure: null),
-        ),
+        (failure) => emit(state.copyWith(isLoading: false, loadFailure: failure)),
+        (details) => emit(state.copyWith(isLoading: false, details: details, loadFailure: null)),
       );
     });
   }
 
-  Future<void> setStatus({
-    required String activityId,
-    required String statusKey,
-  }) async {
-    emit(
-      state.copyWith(
-        isSavingStatus: true,
-        savingStatusKey: statusKey,
-        actionError: null,
-      ),
-    );
+  Future<void> setStatus({required String activityId, required String statusKey}) async {
+    emit(state.copyWith(isSavingStatus: true, savingStatusKey: statusKey, actionError: null));
     final result = await _repository
         .setParticipantStatus(activityId: activityId, statusKey: statusKey)
         .run();
     result.match(
-      (failure) => emit(
-        state.copyWith(
-          isSavingStatus: false,
-          savingStatusKey: null,
-          actionError: failure,
-        ),
-      ),
+      (failure) =>
+          emit(state.copyWith(isSavingStatus: false, savingStatusKey: null, actionError: failure)),
       (_) => emit(state.copyWith(isSavingStatus: false, savingStatusKey: null)),
     );
   }
 
   Future<void> deleteActivity(String activityId) async {
     emit(state.copyWith(isDeleting: true, actionError: null));
-    final result = await _repository
-        .deleteActivity(activityId: activityId)
-        .run();
+    final result = await _repository.deleteActivity(activityId: activityId).run();
     result.match(
-      (failure) =>
-          emit(state.copyWith(isDeleting: false, actionError: failure)),
+      (failure) => emit(state.copyWith(isDeleting: false, actionError: failure)),
       (_) => emit(state.copyWith(isDeleting: false, wasDeleted: true)),
     );
   }
 
   Future<void> leaveActivity(String activityId) async {
     emit(state.copyWith(isLeaving: true, actionError: null));
-    final result = await _repository
-        .leaveActivity(activityId: activityId)
-        .run();
+    final result = await _repository.leaveActivity(activityId: activityId).run();
     result.match(
       (failure) => emit(state.copyWith(isLeaving: false, actionError: failure)),
       (_) => emit(state.copyWith(isLeaving: false, wasLeft: true)),
@@ -90,11 +66,8 @@ class HonkDetailsCubit extends Cubit<HonkDetailsState> {
     emit(state.copyWith(isRotatingInvite: true, actionError: null));
     final result = await _repository.rotateInvite(activityId: activityId).run();
     result.match(
-      (failure) =>
-          emit(state.copyWith(isRotatingInvite: false, actionError: failure)),
-      (code) => emit(
-        state.copyWith(isRotatingInvite: false, rotatedInviteCode: code),
-      ),
+      (failure) => emit(state.copyWith(isRotatingInvite: false, actionError: failure)),
+      (code) => emit(state.copyWith(isRotatingInvite: false, rotatedInviteCode: code)),
     );
   }
 
@@ -117,26 +90,24 @@ class HonkDetailsCubit extends Cubit<HonkDetailsState> {
           statusOptions: statusOptions,
         )
         .run();
-    result.match(
-      (failure) =>
-          emit(state.copyWith(isUpdating: false, actionError: failure)),
-      (updatedActivity) {
-        final current = state.details;
-        if (current != null) {
-          emit(
-            state.copyWith(
-              isUpdating: false,
-              details: current.copyWith(
-                activity: updatedActivity,
-                statusOptions: updatedActivity.statusOptions,
-              ),
+    result.match((failure) => emit(state.copyWith(isUpdating: false, actionError: failure)), (
+      updatedActivity,
+    ) {
+      final current = state.details;
+      if (current != null) {
+        emit(
+          state.copyWith(
+            isUpdating: false,
+            details: current.copyWith(
+              activity: updatedActivity,
+              statusOptions: updatedActivity.statusOptions,
             ),
-          );
-        } else {
-          emit(state.copyWith(isUpdating: false));
-        }
-      },
-    );
+          ),
+        );
+      } else {
+        emit(state.copyWith(isUpdating: false));
+      }
+    });
   }
 
   Future<void> approveJoinRequest(String userId) async {
@@ -154,18 +125,12 @@ class HonkDetailsCubit extends Cubit<HonkDetailsState> {
     result.match(
       (failure) => emit(
         state.copyWith(
-          processingApprovalIds: state.processingApprovalIds.difference({
-            userId,
-          }),
+          processingApprovalIds: state.processingApprovalIds.difference({userId}),
           actionError: failure,
         ),
       ),
       (_) => emit(
-        state.copyWith(
-          processingApprovalIds: state.processingApprovalIds.difference({
-            userId,
-          }),
-        ),
+        state.copyWith(processingApprovalIds: state.processingApprovalIds.difference({userId})),
       ),
     );
   }
@@ -179,24 +144,16 @@ class HonkDetailsCubit extends Cubit<HonkDetailsState> {
         actionError: null,
       ),
     );
-    final result = await _repository
-        .denyJoinRequest(activityId: activityId, userId: userId)
-        .run();
+    final result = await _repository.denyJoinRequest(activityId: activityId, userId: userId).run();
     result.match(
       (failure) => emit(
         state.copyWith(
-          processingApprovalIds: state.processingApprovalIds.difference({
-            userId,
-          }),
+          processingApprovalIds: state.processingApprovalIds.difference({userId}),
           actionError: failure,
         ),
       ),
       (_) => emit(
-        state.copyWith(
-          processingApprovalIds: state.processingApprovalIds.difference({
-            userId,
-          }),
-        ),
+        state.copyWith(processingApprovalIds: state.processingApprovalIds.difference({userId})),
       ),
     );
   }

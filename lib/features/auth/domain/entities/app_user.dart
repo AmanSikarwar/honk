@@ -15,6 +15,5 @@ abstract class AppUser with _$AppUser {
     DateTime? lastSignInAt,
   }) = _AppUser;
 
-  factory AppUser.fromJson(Map<String, dynamic> json) =>
-      _$AppUserFromJson(json);
+  factory AppUser.fromJson(Map<String, dynamic> json) => _$AppUserFromJson(json);
 }

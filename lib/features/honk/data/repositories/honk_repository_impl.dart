@@ -55,9 +55,7 @@ class HonkRepositoryImpl implements IHonkRepository {
       final row = Map<String, dynamic>.from(response as Map);
       final activityId = row['activity_id'] as String?;
       if (activityId == null || activityId.isEmpty) {
-        throw const MainFailure.databaseFailure(
-          'Failed to create activity. Missing activity id.',
-        );
+        throw const MainFailure.databaseFailure('Failed to create activity. Missing activity id.');
       }
       final inviteCode = row['invite_code'] as String? ?? '';
 
@@ -75,9 +73,7 @@ class HonkRepositoryImpl implements IHonkRepository {
         creatorId: currentUserId,
         activity: activity.trim(),
         location: location.trim(),
-        details: (trimmedDetails == null || trimmedDetails.isEmpty)
-            ? null
-            : trimmedDetails,
+        details: (trimmedDetails == null || trimmedDetails.isEmpty) ? null : trimmedDetails,
         statusResetSeconds: statusResetSeconds,
         inviteCode: inviteCode,
         createdAt: nowUtc,
@@ -114,9 +110,7 @@ class HonkRepositoryImpl implements IHonkRepository {
 
       final updated = await _withTimeout(_fetchActivityById(activityId));
       if (updated == null) {
-        throw const MainFailure.databaseFailure(
-          'Updated activity could not be loaded.',
-        );
+        throw const MainFailure.databaseFailure('Updated activity could not be loaded.');
       }
       return updated;
     }, mapErrorToMainFailure);
@@ -142,32 +136,25 @@ class HonkRepositoryImpl implements IHonkRepository {
     return TaskEither<MainFailure, String>.tryCatch(() async {
       _requireCurrentUserId();
       final response = await _withTimeout(
-        _supabase.rpc(
-          'rotate_honk_invite_code',
-          params: {'p_activity_id': activityId},
-        ),
+        _supabase.rpc('rotate_honk_invite_code', params: {'p_activity_id': activityId}),
       );
       final row = Map<String, dynamic>.from(response as Map);
       final code = row['invite_code'] as String?;
       if (code == null || code.isEmpty) {
-        throw const MainFailure.databaseFailure(
-          'Failed to rotate invite code.',
-        );
+        throw const MainFailure.databaseFailure('Failed to rotate invite code.');
       }
       return code;
     }, mapErrorToMainFailure);
   }
 
   @override
-  TaskEither<MainFailure, ({String activityId, bool isPending})>
-  joinByInviteCode({required String inviteCode}) {
+  TaskEither<MainFailure, ({String activityId, bool isPending})> joinByInviteCode({
+    required String inviteCode,
+  }) {
     return TaskEither.tryCatch(() async {
       _requireCurrentUserId();
       final response = await _withTimeout(
-        _supabase.rpc(
-          'join_honk_activity_by_code',
-          params: {'p_invite_code': inviteCode.trim()},
-        ),
+        _supabase.rpc('join_honk_activity_by_code', params: {'p_invite_code': inviteCode.trim()}),
       );
       final row = Map<String, dynamic>.from(response as Map);
       final activityId = row['activity_id'] as String?;
@@ -184,10 +171,7 @@ class HonkRepositoryImpl implements IHonkRepository {
     return TaskEither<MainFailure, Unit>.tryCatch(() async {
       _requireCurrentUserId();
       await _withTimeout(
-        _supabase.rpc(
-          'leave_honk_activity',
-          params: {'p_activity_id': activityId},
-        ),
+        _supabase.rpc('leave_honk_activity', params: {'p_activity_id': activityId}),
       );
       return unit;
     }, mapErrorToMainFailure);
@@ -259,8 +243,7 @@ class HonkRepositoryImpl implements IHonkRepository {
       );
     }
 
-    final controller =
-        StreamController<Either<MainFailure, List<HonkActivitySummary>>>();
+    final controller = StreamController<Either<MainFailure, List<HonkActivitySummary>>>();
     RealtimeChannel? channel;
     var isFetching = false;
 
@@ -275,10 +258,7 @@ class HonkRepositoryImpl implements IHonkRepository {
               .order('updated_at', ascending: false),
         );
         final rows = List<Map<String, dynamic>>.from(response as List);
-        final summaries = await _toActivitySummaries(
-          currentUserId: currentUserId,
-          rows: rows,
-        );
+        final summaries = await _toActivitySummaries(currentUserId: currentUserId, rows: rows);
         if (!controller.isClosed) controller.add(right(summaries));
       } catch (e, st) {
         if (!controller.isClosed) {
@@ -292,9 +272,7 @@ class HonkRepositoryImpl implements IHonkRepository {
     unawaited(emitSnapshot());
 
     channel = _supabase
-        .channel(
-          'feed_${currentUserId}_${DateTime.now().millisecondsSinceEpoch}',
-        )
+        .channel('feed_${currentUserId}_${DateTime.now().millisecondsSinceEpoch}')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
@@ -331,8 +309,7 @@ class HonkRepositoryImpl implements IHonkRepository {
       );
     }
 
-    final controller =
-        StreamController<Either<MainFailure, HonkActivityDetails>>();
+    final controller = StreamController<Either<MainFailure, HonkActivityDetails>>();
     RealtimeChannel? channel;
     var isFetching = false;
 
@@ -343,11 +320,7 @@ class HonkRepositoryImpl implements IHonkRepository {
         final details = await _withTimeout(_fetchActivityDetails(activityId));
         if (details == null) {
           if (!controller.isClosed) {
-            controller.add(
-              left(
-                const MainFailure.databaseFailure('Activity no longer exists.'),
-              ),
-            );
+            controller.add(left(const MainFailure.databaseFailure('Activity no longer exists.')));
           }
           return;
         }
@@ -364,9 +337,7 @@ class HonkRepositoryImpl implements IHonkRepository {
     unawaited(emitDetails());
 
     channel = _supabase
-        .channel(
-          'details_${activityId}_${DateTime.now().millisecondsSinceEpoch}',
-        )
+        .channel('details_${activityId}_${DateTime.now().millisecondsSinceEpoch}')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
@@ -436,18 +407,14 @@ class HonkRepositoryImpl implements IHonkRepository {
         .filter('left_at', 'is', null);
 
     final defaultStatusByActivity = <String, String>{};
-    for (final row in List<Map<String, dynamic>>.from(
-      optionsResponse as List,
-    )) {
+    for (final row in List<Map<String, dynamic>>.from(optionsResponse as List)) {
       final aId = row['activity_id'] as String?;
       final sk = row['status_key'] as String?;
       if (aId != null && sk != null) defaultStatusByActivity[aId] = sk;
     }
 
     final participantCountByActivity = <String, int>{};
-    for (final row in List<Map<String, dynamic>>.from(
-      participantResponse as List,
-    )) {
+    for (final row in List<Map<String, dynamic>>.from(participantResponse as List)) {
       final aId = row['activity_id'] as String?;
       if (aId == null) continue;
       participantCountByActivity.update(aId, (v) => v + 1, ifAbsent: () => 1);
@@ -473,28 +440,21 @@ class HonkRepositoryImpl implements IHonkRepository {
 
   Future<HonkActivityDetails?> _fetchActivityDetails(String activityId) async {
     final response = await _withTimeout(
-      _supabase.rpc(
-        'get_honk_activity_details',
-        params: {'p_activity_id': activityId},
-      ),
+      _supabase.rpc('get_honk_activity_details', params: {'p_activity_id': activityId}),
     );
     if (response == null) return null;
 
     final data = Map<String, dynamic>.from(response as Map);
     final options = _parseStatusOptions(data['status_options']);
     final participants = _parseParticipants(data['participants']);
-    final pendingParticipants = _parseParticipants(
-      data['pending_participants'],
-    );
+    final pendingParticipants = _parseParticipants(data['pending_participants']);
     final currentUserId = _requireCurrentUserId();
 
     // Build a minimal HonkActivity from the details payload.
     final optionsResponse = await _withTimeout(
       _supabase
           .from('honk_activity_status_options')
-          .select(
-            'activity_id, status_key, label, sort_order, is_default, is_active',
-          )
+          .select('activity_id, status_key, label, sort_order, is_default, is_active')
           .eq('activity_id', activityId)
           .eq('is_active', true)
           .order('sort_order', ascending: true),
@@ -515,20 +475,14 @@ class HonkRepositoryImpl implements IHonkRepository {
 
   Future<HonkActivity?> _fetchActivityById(String activityId) async {
     final response = await _withTimeout(
-      _supabase
-          .from('honk_activities')
-          .select(_activityColumns)
-          .eq('id', activityId)
-          .maybeSingle(),
+      _supabase.from('honk_activities').select(_activityColumns).eq('id', activityId).maybeSingle(),
     );
     if (response == null) return null;
 
     final optionsResponse = await _withTimeout(
       _supabase
           .from('honk_activity_status_options')
-          .select(
-            'activity_id, status_key, label, sort_order, is_default, is_active',
-          )
+          .select('activity_id, status_key, label, sort_order, is_default, is_active')
           .eq('activity_id', activityId)
           .eq('is_active', true)
           .order('sort_order', ascending: true),
@@ -542,11 +496,7 @@ class HonkRepositoryImpl implements IHonkRepository {
   List<HonkStatusOption> _parseStatusOptions(dynamic raw) {
     if (raw is! List) return const <HonkStatusOption>[];
     return raw
-        .map(
-          (e) => HonkStatusOptionModel.fromJson(
-            Map<String, dynamic>.from(e as Map),
-          ).toDomain(),
-        )
+        .map((e) => HonkStatusOptionModel.fromJson(Map<String, dynamic>.from(e as Map)).toDomain())
         .toList(growable: false)
       ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
   }
@@ -554,17 +504,11 @@ class HonkRepositoryImpl implements IHonkRepository {
   List<HonkParticipant> _parseParticipants(dynamic raw) {
     if (raw is! List) return const <HonkParticipant>[];
     return raw
-        .map(
-          (e) => HonkParticipantModel.fromJson(
-            Map<String, dynamic>.from(e as Map),
-          ).toDomain(),
-        )
+        .map((e) => HonkParticipantModel.fromJson(Map<String, dynamic>.from(e as Map)).toDomain())
         .toList(growable: false);
   }
 
-  List<Map<String, dynamic>> _serializeStatusOptions(
-    List<HonkStatusOption> options,
-  ) {
+  List<Map<String, dynamic>> _serializeStatusOptions(List<HonkStatusOption> options) {
     return options
         .map(
           (o) => {
@@ -587,6 +531,5 @@ class HonkRepositoryImpl implements IHonkRepository {
     return id;
   }
 
-  Future<T> _withTimeout<T>(Future<T> future) =>
-      future.timeout(_requestTimeout);
+  Future<T> _withTimeout<T>(Future<T> future) => future.timeout(_requestTimeout);
 }

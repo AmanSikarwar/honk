@@ -8,6 +8,5 @@ class NotificationSyncState with _$NotificationSyncState {
 
   const factory NotificationSyncState.syncSuccess() = _SyncSuccess;
 
-  const factory NotificationSyncState.syncFailure(MainFailure failure) =
-      _SyncFailure;
+  const factory NotificationSyncState.syncFailure(MainFailure failure) = _SyncFailure;
 }

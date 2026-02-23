@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../common/widgets/user_avatar.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/entities/honk_status_option.dart';
 import '../cubit/create_honk_cubit.dart';
 
@@ -14,334 +17,302 @@ class CreateHonkPage extends StatefulWidget {
 
 class _CreateHonkPageState extends State<CreateHonkPage> {
   final _formKey = GlobalKey<FormState>();
-  final _activityController = TextEditingController();
-  final _locationController = TextEditingController();
-  final _detailsController = TextEditingController();
+  final _actCtrl = TextEditingController();
+  final _locCtrl = TextEditingController();
+  final _detCtrl = TextEditingController();
 
-  int _statusResetSeconds = 1800;
-
-  final List<_StatusOptionRow> _statusRows = [
-    _StatusOptionRow(statusKey: 'going', label: 'Going'),
-    _StatusOptionRow(statusKey: 'maybe', label: 'Maybe'),
-    _StatusOptionRow(statusKey: 'not_going', label: 'Not Going'),
+  int _resetSecs = 3600;
+  final List<_StatusRowData> _rows = [
+    _StatusRowData('going', 'Going'),
+    _StatusRowData('maybe', 'Maybe'),
+    _StatusRowData('not_going', 'Not going'),
   ];
-  int _defaultStatusIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-  }
+  int _defaultIdx = 0;
 
   @override
   void dispose() {
-    _activityController.dispose();
-    _locationController.dispose();
-    _detailsController.dispose();
-    for (final row in _statusRows) {
-      row.dispose();
+    _actCtrl.dispose();
+    _locCtrl.dispose();
+    _detCtrl.dispose();
+    for (final r in _rows) {
+      r.dispose();
     }
     super.dispose();
   }
 
-  void _submit() {
+  List<HonkStatusOption> _buildOptions() => [
+    for (var i = 0; i < _rows.length; i++)
+      HonkStatusOption(
+        statusKey: _rows[i].keyCtrl.text.trim(),
+        label: _rows[i].labelCtrl.text.trim(),
+        sortOrder: i,
+        isDefault: i == _defaultIdx,
+        isActive: true,
+      ),
+  ];
+
+  Future<void> _submit() async {
     if (_formKey.currentState?.validate() != true) return;
-
-    final statusOptions = _buildStatusOptions();
-    if (statusOptions == null) return;
-
-    context.read<CreateHonkCubit>().createActivity(
-      activity: _activityController.text.trim(),
-      location: _locationController.text.trim(),
-      details: _detailsController.text.trim().isEmpty
-          ? null
-          : _detailsController.text.trim(),
-      statusResetSeconds: _statusResetSeconds,
-      statusOptions: statusOptions,
+    final opts = _buildOptions();
+    final keysValid = opts.every(
+      (o) =>
+          o.statusKey.isNotEmpty &&
+          o.label.isNotEmpty &&
+          RegExp(r'^[a-z0-9_]+$').hasMatch(o.statusKey),
     );
-  }
-
-  List<HonkStatusOption>? _buildStatusOptions() {
-    if (_statusRows.length < 2) {
-      _showMessage('At least two status options are required.');
-      return null;
-    }
-
-    final options = <HonkStatusOption>[];
-    for (int i = 0; i < _statusRows.length; i++) {
-      final key = _statusRows[i].statusKeyController.text.trim();
-      final label = _statusRows[i].labelController.text.trim();
-
-      if (key.isEmpty || label.isEmpty) {
-        _showMessage('Status key and label cannot be empty.');
-        return null;
-      }
-      if (!RegExp(r'^[a-z0-9_]+$').hasMatch(key)) {
-        _showMessage('Invalid status key "$key". Use lowercase snake_case.');
-        return null;
-      }
-      options.add(
-        HonkStatusOption(
-          statusKey: key,
-          label: label,
-          sortOrder: i,
-          isDefault: i == _defaultStatusIndex,
-          isActive: true,
+    if (!keysValid ||
+        opts.map((o) => o.statusKey).toSet().length != opts.length) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Status keys must be unique lowercase letters/numbers.',
+          ),
         ),
       );
+      return;
     }
-
-    if (options.map((o) => o.statusKey).toSet().length != options.length) {
-      _showMessage('Status keys must be unique.');
-      return null;
-    }
-    return options;
-  }
-
-  void _showMessage(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
-
-  String? _validateRequired(String? v, {required String fieldName}) {
-    if (v == null || v.trim().isEmpty) return '$fieldName is required.';
-    return null;
+    context.read<CreateHonkCubit>().createActivity(
+      activity: _actCtrl.text.trim(),
+      location: _locCtrl.text.trim(),
+      details: _detCtrl.text.trim().isEmpty ? null : _detCtrl.text.trim(),
+      statusResetSeconds: _resetSecs,
+      statusOptions: opts,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<CreateHonkCubit, CreateHonkState>(
-      listener: (context, state) {
-        if (state.createdActivity != null) {
-          final activity = state.createdActivity!;
-          context.read<CreateHonkCubit>().resetSubmission();
-          // Navigate to the new honk's details page.
-          HonkDetailsRoute(activityId: activity.id).go(context);
-        }
+      listener: (ctx, state) {
         if (state.submissionFailure != null) {
-          _showMessage(state.submissionFailure.toString());
-          context.read<CreateHonkCubit>().resetSubmission();
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            SnackBar(content: Text(state.submissionFailure.toString())),
+          );
+          ctx.read<CreateHonkCubit>().resetSubmission();
+        }
+        if (state.createdActivity != null) {
+          HonkDetailsRoute(activityId: state.createdActivity!.id).go(ctx);
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('New Honk')),
+        appBar: AppBar(title: const Text('New honk 📣')),
         body: BlocBuilder<CreateHonkCubit, CreateHonkState>(
-          builder: (context, state) {
-            final isSubmitting = state.isSubmitting;
-            return Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  // ── Activity & Location ──────────────────────────────────
-                  TextFormField(
-                    controller: _activityController,
-                    enabled: !isSubmitting,
-                    decoration: const InputDecoration(
-                      labelText: 'Activity *',
-                      hintText: 'e.g. Morning run',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) =>
-                        _validateRequired(v, fieldName: 'Activity'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _locationController,
-                    enabled: !isSubmitting,
-                    decoration: const InputDecoration(
-                      labelText: 'Location *',
-                      hintText: 'e.g. Central Park',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) =>
-                        _validateRequired(v, fieldName: 'Location'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _detailsController,
-                    enabled: !isSubmitting,
-                    decoration: const InputDecoration(
-                      labelText: 'Details (optional)',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ── Status reset ─────────────────────────────────────────
-                  _SectionTitle('Status resets after'),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<int>(
-                    initialValue: _statusResetSeconds,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 600, child: Text('10 minutes')),
-                      DropdownMenuItem(value: 1800, child: Text('30 minutes')),
-                      DropdownMenuItem(value: 3600, child: Text('1 hour')),
-                      DropdownMenuItem(value: 7200, child: Text('2 hours')),
-                    ],
-                    onChanged: isSubmitting
-                        ? null
-                        : (v) {
-                            if (v == null) return;
-                            setState(() => _statusResetSeconds = v);
-                          },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ── Status options ───────────────────────────────────────
-                  _buildStatusEditor(isSubmitting: isSubmitting),
-                  const SizedBox(height: 24),
-
-                  // ── Submit ───────────────────────────────────────────────
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: isSubmitting ? null : _submit,
-                      icon: isSubmitting
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.campaign_rounded),
-                      label: const Text('Create Honk'),
-                    ),
-                  ),
-                ],
+          builder: (ctx, state) => Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.sm,
+                AppSpacing.md,
+                AppSpacing.xxl,
               ),
-            );
-          },
+              children: [
+                // ── Plan details ───────────────────────────────────────
+                const SectionHeader('Plan details'),
+                const SizedBox(height: AppSpacing.sm),
+                TextFormField(
+                  controller: _actCtrl,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'What\'s the plan? *',
+                    hintText: 'e.g. Ping pong at the rec centre',
+                    prefixIcon: Icon(Icons.event_outlined),
+                  ),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Required.' : null,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextFormField(
+                  controller: _locCtrl,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Where? *',
+                    hintText: 'e.g. 4th floor lounge',
+                    prefixIcon: Icon(Icons.place_outlined),
+                  ),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Required.' : null,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextFormField(
+                  controller: _detCtrl,
+                  textCapitalization: TextCapitalization.sentences,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'Extra details (optional)',
+                    hintText: 'e.g. Bring rackets',
+                    prefixIcon: Padding(
+                      padding: EdgeInsets.only(bottom: 28),
+                      child: Icon(Icons.info_outline),
+                    ),
+                    alignLabelWithHint: true,
+                  ),
+                ),
+
+                // ── Status reset ───────────────────────────────────────
+                const SizedBox(height: AppSpacing.lg),
+                const SectionHeader('Status expiry'),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Statuses reset to default after this period.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _ExpiryPicker(
+                  value: _resetSecs,
+                  onChanged: (v) => setState(() => _resetSecs = v),
+                ),
+
+                // ── Status options ─────────────────────────────────────
+                const SizedBox(height: AppSpacing.lg),
+                const SectionHeader('Response options'),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Tap ⭕ to set the default response.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                ...List.generate(_rows.length, (i) {
+                  final row = _rows[i];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => setState(() => _defaultIdx = i),
+                          icon: Icon(
+                            i == _defaultIdx
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_unchecked,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          tooltip: 'Set as default',
+                        ),
+                        Expanded(
+                          child: TextField(
+                            controller: row.keyCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Key',
+                              hintText: 'e.g. going',
+                              isDense: true,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: TextField(
+                            controller: row.labelCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Label',
+                              hintText: 'e.g. Going',
+                              isDense: true,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: _rows.length <= 2
+                              ? null
+                              : () => setState(() {
+                                  _rows.removeAt(i).dispose();
+                                  _defaultIdx = _defaultIdx.clamp(
+                                    0,
+                                    _rows.length - 1,
+                                  );
+                                }),
+                          icon: const Icon(Icons.remove_circle_outline),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                TextButton.icon(
+                  onPressed: _rows.length >= 8
+                      ? null
+                      : () => setState(() {
+                          _rows.add(
+                            _StatusRowData(
+                              'status_${_rows.length + 1}',
+                              'Option ${_rows.length + 1}',
+                            ),
+                          );
+                        }),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add option'),
+                ),
+
+                // ── Submit ─────────────────────────────────────────────
+                const SizedBox(height: AppSpacing.lg),
+                FilledButton(
+                  onPressed: state.isSubmitting ? null : _submit,
+                  child: state.isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Create honk'),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
-
-  Widget _buildStatusEditor({required bool isSubmitting}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _SectionTitle('Status options'),
-            TextButton.icon(
-              onPressed: isSubmitting || _statusRows.length >= 8
-                  ? null
-                  : () {
-                      setState(() {
-                        _statusRows.add(
-                          _StatusOptionRow(
-                            statusKey: 'status_${_statusRows.length + 1}',
-                            label: 'Status ${_statusRows.length + 1}',
-                          ),
-                        );
-                      });
-                    },
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Tap the circle to set the default status.',
-          style: TextStyle(fontSize: 12),
-        ),
-        const SizedBox(height: 8),
-        ...List.generate(_statusRows.length, (i) {
-          final row = _statusRows[i];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                IconButton(
-                  tooltip: i == _defaultStatusIndex
-                      ? 'Default'
-                      : 'Set as default',
-                  onPressed: isSubmitting
-                      ? null
-                      : () => setState(() => _defaultStatusIndex = i),
-                  icon: Icon(
-                    i == _defaultStatusIndex
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_unchecked,
-                  ),
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: row.statusKeyController,
-                    enabled: !isSubmitting,
-                    decoration: const InputDecoration(
-                      labelText: 'Key',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: row.labelController,
-                    enabled: !isSubmitting,
-                    decoration: const InputDecoration(
-                      labelText: 'Label',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Remove',
-                  onPressed: isSubmitting || _statusRows.length <= 2
-                      ? null
-                      : () {
-                          setState(() {
-                            _statusRows.removeAt(i).dispose();
-                            if (_defaultStatusIndex >= _statusRows.length) {
-                              _defaultStatusIndex = _statusRows.length - 1;
-                            }
-                          });
-                        },
-                  icon: const Icon(Icons.remove_circle_outline),
-                ),
-              ],
-            ),
-          );
-        }),
-      ],
-    );
-  }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.title);
+// ── Expiry picker ─────────────────────────────────────────────────────────────
 
-  final String title;
+class _ExpiryPicker extends StatelessWidget {
+  const _ExpiryPicker({required this.value, required this.onChanged});
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  static const _options = [
+    (600, '10 min'),
+    (1800, '30 min'),
+    (3600, '1 hour'),
+    (7200, '2 hours'),
+    (86400, '1 day'),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: Theme.of(
-        context,
-      ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+    return Wrap(
+      spacing: AppSpacing.sm,
+      children: _options.map((opt) {
+        final (secs, label) = opt;
+        final selected = secs == value;
+        return ChoiceChip(
+          label: Text(label),
+          selected: selected,
+          onSelected: (_) => onChanged(secs),
+          selectedColor: AppColors.brandPurple.withValues(alpha: 0.15),
+          labelStyle: TextStyle(
+            color: selected
+                ? AppColors.brandPurple
+                : Theme.of(context).colorScheme.onSurface,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+          ),
+        );
+      }).toList(),
     );
   }
 }
 
-class _StatusOptionRow {
-  _StatusOptionRow({required String statusKey, required String label})
-    : statusKeyController = TextEditingController(text: statusKey),
-      labelController = TextEditingController(text: label);
+// ── Internal helpers ──────────────────────────────────────────────────────────
 
-  final TextEditingController statusKeyController;
-  final TextEditingController labelController;
-
+class _StatusRowData {
+  _StatusRowData(String key, String label)
+    : keyCtrl = TextEditingController(text: key),
+      labelCtrl = TextEditingController(text: label);
+  final TextEditingController keyCtrl;
+  final TextEditingController labelCtrl;
   void dispose() {
-    statusKeyController.dispose();
-    labelController.dispose();
+    keyCtrl.dispose();
+    labelCtrl.dispose();
   }
 }

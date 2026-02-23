@@ -3,9 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:pretty_qr_code/pretty_qr_code.dart';
 
+import '../../../../common/widgets/honk_chip.dart';
+import '../../../../common/widgets/user_avatar.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/entities/honk_activity.dart';
 import '../../domain/entities/honk_activity_details.dart';
 import '../../domain/entities/honk_participant.dart';
@@ -14,7 +19,6 @@ import '../cubit/honk_details_cubit.dart';
 
 class HonkDetailsPage extends StatefulWidget {
   const HonkDetailsPage({required this.activityId, super.key});
-
   final String activityId;
 
   @override
@@ -42,68 +46,36 @@ class _HonkDetailsPageState extends State<HonkDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<HonkDetailsCubit, HonkDetailsState>(
-      listener: (context, state) {
+      listener: (ctx, state) {
         if (state.wasDeleted || state.wasLeft) {
-          const HomeRoute().go(context);
+          const HomeRoute().go(ctx);
           return;
         }
         if (state.actionError != null) {
           ScaffoldMessenger.of(
-            context,
+            ctx,
           ).showSnackBar(SnackBar(content: Text(state.actionError.toString())));
-          context.read<HonkDetailsCubit>().clearActionError();
+          ctx.read<HonkDetailsCubit>().clearActionError();
         }
         if (state.rotatedInviteCode != null) {
-          _showInviteCodeDialog(
-            context,
-            code: state.rotatedInviteCode!,
-            details: state.details,
-          );
-          context.read<HonkDetailsCubit>().clearRotatedInviteCode();
+          _showNewCodeDialog(ctx, state.rotatedInviteCode!);
+          ctx.read<HonkDetailsCubit>().clearRotatedInviteCode();
         }
       },
       child: BlocBuilder<HonkDetailsCubit, HonkDetailsState>(
-        builder: (context, state) {
+        builder: (ctx, state) {
           if (state.isLoading && state.details == null) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Loading…')),
-              body: const Center(child: CircularProgressIndicator()),
-            );
+            return const _LoadingScaffold();
           }
-
           if (state.loadFailure != null && state.details == null) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(state.loadFailure.toString()),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: () => context.read<HonkDetailsCubit>().watch(
-                          widget.activityId,
-                        ),
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            return _ErrorScaffold(
+              error: state.loadFailure.toString(),
+              onRetry: () =>
+                  ctx.read<HonkDetailsCubit>().watch(widget.activityId),
             );
           }
-
           final details = state.details;
-          if (details == null) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Honk')),
-              body: const Center(child: CircularProgressIndicator()),
-            );
-          }
-
+          if (details == null) return const _LoadingScaffold();
           return _DetailsScaffold(
             details: details,
             state: state,
@@ -115,31 +87,25 @@ class _HonkDetailsPageState extends State<HonkDetailsPage> {
     );
   }
 
-  void _showInviteCodeDialog(
-    BuildContext context, {
-    required String code,
-    required HonkActivityDetails? details,
-  }) {
-    final deepLink = 'https://honkapp.app/join/$code';
+  void _showNewCodeDialog(BuildContext ctx, String code) {
     showDialog<void>(
-      context: context,
+      context: ctx,
       builder: (_) => AlertDialog(
-        title: const Text('New Invite Code'),
+        title: const Text('New invite code 🔄'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Share this code or link with friends:'),
-            const SizedBox(height: 12),
-            _CopyableRow(label: 'Code', value: code),
-            const SizedBox(height: 8),
-            _CopyableRow(label: 'Link', value: deepLink),
+            const Text('The old code is now invalid. Share the new one:'),
+            const SizedBox(height: AppSpacing.md),
+            _CopyRow(label: 'Code', value: code),
+            const SizedBox(height: AppSpacing.sm),
+            _CopyRow(label: 'Link', value: 'https://honkapp.app/join/$code'),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Got it'),
           ),
         ],
       ),
@@ -147,7 +113,50 @@ class _HonkDetailsPageState extends State<HonkDetailsPage> {
   }
 }
 
-// ── Main scaffold ─────────────────────────────────────────────────────────────
+// ── Loading / Error scaffolds ─────────────────────────────────────────────────
+
+class _LoadingScaffold extends StatelessWidget {
+  const _LoadingScaffold();
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(),
+    body: const Center(child: CircularProgressIndicator()),
+  );
+}
+
+class _ErrorScaffold extends StatelessWidget {
+  const _ErrorScaffold({required this.error, required this.onRetry});
+  final String error;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 48),
+              const SizedBox(height: AppSpacing.md),
+              Text(error, textAlign: TextAlign.center),
+              const SizedBox(height: AppSpacing.md),
+              FilledButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Details scaffold ──────────────────────────────────────────────────────────
 
 class _DetailsScaffold extends StatelessWidget {
   const _DetailsScaffold({
@@ -180,49 +189,60 @@ class _DetailsScaffold extends StatelessWidget {
               onPressed: () => _showShareSheet(context, activity),
             ),
             IconButton(
-              tooltip: 'Edit honk',
+              tooltip: 'Edit',
               icon: const Icon(Icons.edit_outlined),
               onPressed: state.isUpdating
                   ? null
-                  : () => _showEditDialog(context, details),
+                  : () => _showEditSheet(context, details),
             ),
-            IconButton(
-              tooltip: 'Rotate invite',
-              icon: const Icon(Icons.refresh),
-              onPressed: state.isRotatingInvite
-                  ? null
-                  : () => cubit.rotateInvite(activityId),
+            PopupMenuButton<_Action>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (a) {
+                if (a == _Action.rotate) cubit.rotateInvite(activityId);
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: _Action.rotate,
+                  child: ListTile(
+                    leading: Icon(Icons.refresh),
+                    title: Text('Rotate invite code'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
             ),
           ],
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.sm,
+          AppSpacing.md,
+          AppSpacing.xxl,
+        ),
         children: [
           _ActivityInfoCard(activity: activity),
-          const SizedBox(height: 16),
           if (isCreator && details.pendingParticipants.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
             _PendingRequestsCard(
               pendingParticipants: details.pendingParticipants,
               activityId: activityId,
               processingIds: state.processingApprovalIds,
             ),
-            const SizedBox(height: 16),
           ],
+          const SizedBox(height: AppSpacing.md),
           _ParticipantsList(
             participants: details.participants,
             statusOptions: details.statusOptions,
             nowUtc: nowUtc,
-            statusResetSeconds: activity.statusResetSeconds,
           ),
-          const SizedBox(height: 80),
         ],
       ),
-      floatingActionButton: _HonkFab(
+      floatingActionButton: _StatusFab(
         details: details,
         state: state,
         activityId: activityId,
-        isCreator: isCreator,
         currentParticipant: me,
         nowUtc: nowUtc,
       ),
@@ -236,81 +256,108 @@ class _DetailsScaffold extends StatelessWidget {
 
   void _showShareSheet(BuildContext context, HonkActivity activity) {
     final code = activity.inviteCode;
-    final deepLink = 'https://honkapp.app/join/$code';
+    final link = 'https://honkapp.app/join/$code';
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.sm,
+          AppSpacing.lg,
+          AppSpacing.xl,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Invite friends',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+            Text(
+              'Invite friends 📣',
+              style: Theme.of(context).textTheme.titleLarge,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             SizedBox(
               width: 200,
               height: 200,
               child: PrettyQrView.data(
-                data: deepLink,
+                data: link,
                 decoration: const PrettyQrDecoration(
-                  shape: PrettyQrSmoothSymbol(),
-                  quietZone: PrettyQrQuietZone.standard,
+                  shape: PrettyQrSmoothSymbol(color: AppColors.brandPurple),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            _CopyableRow(label: 'Code', value: code),
-            const SizedBox(height: 8),
-            _CopyableRow(label: 'Link', value: deepLink),
+            const SizedBox(height: AppSpacing.lg),
+            _CopyRow(label: 'Code', value: code),
+            const SizedBox(height: AppSpacing.sm),
+            _CopyRow(label: 'Link', value: link),
           ],
         ),
       ),
     );
   }
 
-  void _showEditDialog(BuildContext context, HonkActivityDetails details) {
-    showDialog<void>(
+  void _showEditSheet(BuildContext context, HonkActivityDetails details) {
+    showModalBottomSheet<void>(
       context: context,
-      builder: (dialogContext) => BlocProvider.value(
+      isScrollControlled: true,
+      builder: (sheetCtx) => BlocProvider.value(
         value: context.read<HonkDetailsCubit>(),
-        child: _EditHonkDialog(details: details, activityId: activityId),
+        child: _EditHonkSheet(details: details, activityId: activityId),
       ),
     );
   }
 }
 
+enum _Action { rotate }
+
 // ── Activity info card ────────────────────────────────────────────────────────
 
 class _ActivityInfoCard extends StatelessWidget {
   const _ActivityInfoCard({required this.activity});
-
   final HonkActivity activity;
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _InfoRow(icon: Icons.place_outlined, text: activity.location),
-            if (activity.details != null && activity.details!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _InfoRow(icon: Icons.info_outline, text: activity.details!),
+            _InfoRow(Icons.place_outlined, activity.location),
+            if (activity.details?.isNotEmpty == true) ...[
+              const SizedBox(height: AppSpacing.sm),
+              _InfoRow(Icons.info_outline, activity.details!),
             ],
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             _InfoRow(
-              icon: Icons.timer_outlined,
-              text:
-                  'Status resets after ${_formatReset(activity.statusResetSeconds)}',
+              Icons.timer_outlined,
+              'Status resets after ${_fmt(activity.statusResetSeconds)}',
+            ),
+            const Divider(height: AppSpacing.lg),
+            Row(
+              children: [
+                Icon(Icons.key_rounded, size: 16, color: cs.onSurfaceVariant),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    activity.inviteCode,
+                    style: GoogleFonts.sourceCodePro(fontSize: 13),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.copy, size: 16),
+                  tooltip: 'Copy code',
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: activity.inviteCode));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Code copied!')),
+                    );
+                  },
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
             ),
           ],
         ),
@@ -318,7 +365,7 @@ class _ActivityInfoCard extends StatelessWidget {
     );
   }
 
-  String _formatReset(int seconds) {
+  String _fmt(int seconds) {
     if (seconds < 60) return '${seconds}s';
     if (seconds < 3600) return '${seconds ~/ 60}m';
     return '${seconds ~/ 3600}h';
@@ -326,8 +373,7 @@ class _ActivityInfoCard extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.text});
-
+  const _InfoRow(this.icon, this.text);
   final IconData icon;
   final String text;
 
@@ -336,9 +382,15 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: Theme.of(context).colorScheme.outline),
-        const SizedBox(width: 8),
-        Expanded(child: Text(text)),
+        Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
+        ),
       ],
     );
   }
@@ -352,7 +404,6 @@ class _PendingRequestsCard extends StatelessWidget {
     required this.activityId,
     required this.processingIds,
   });
-
   final List<HonkParticipant> pendingParticipants;
   final String activityId;
   final Set<String> processingIds;
@@ -365,58 +416,72 @@ class _PendingRequestsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(
-              'Join requests',
-              style: Theme.of(context).textTheme.titleMedium,
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.xs,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.statusAmberBg,
+                    borderRadius: BorderRadius.circular(AppRadius.chip),
+                  ),
+                  child: Text(
+                    '${pendingParticipants.length} pending',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.statusAmber,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  'Join requests',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
             ),
           ),
           ...pendingParticipants.map((p) {
             final processing = processingIds.contains(p.userId);
-            final displayName = p.fullName ?? p.username;
-            final initials = displayName.isNotEmpty
-                ? displayName[0].toUpperCase()
-                : '?';
             return ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHigh,
-                backgroundImage: p.profileUrl != null
-                    ? NetworkImage(p.profileUrl!)
-                    : null,
-                onBackgroundImageError: p.profileUrl != null ? (_, _) {} : null,
-                child: p.profileUrl == null
-                    ? Text(
-                        initials,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      )
-                    : null,
+              leading: UserAvatar(
+                username: p.username,
+                profileUrl: p.profileUrl,
               ),
-              title: Text(displayName),
+              title: Text(p.fullName ?? p.username),
+              subtitle: Text(
+                '@${p.username}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
               trailing: processing
                   ? const SizedBox(
-                      width: 20,
-                      height: 20,
+                      width: 24,
+                      height: 24,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
+                        _ActionBtn(
+                          icon: Icons.check_rounded,
+                          color: AppColors.statusGreen,
                           tooltip: 'Approve',
-                          icon: const Icon(
-                            Icons.check_circle_outline,
-                            color: Colors.green,
-                          ),
                           onPressed: () => cubit.approveJoinRequest(p.userId),
                         ),
-                        IconButton(
+                        const SizedBox(width: AppSpacing.xs),
+                        _ActionBtn(
+                          icon: Icons.close_rounded,
+                          color: AppColors.statusRed,
                           tooltip: 'Deny',
-                          icon: const Icon(
-                            Icons.cancel_outlined,
-                            color: Colors.red,
-                          ),
                           onPressed: () => cubit.denyJoinRequest(p.userId),
                         ),
                       ],
@@ -429,6 +494,38 @@ class _PendingRequestsCard extends StatelessWidget {
   }
 }
 
+class _ActionBtn extends StatelessWidget {
+  const _ActionBtn({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    required this.onPressed,
+  });
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.xs),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+      ),
+    );
+  }
+}
+
 // ── Participants list ─────────────────────────────────────────────────────────
 
 class _ParticipantsList extends StatelessWidget {
@@ -436,13 +533,10 @@ class _ParticipantsList extends StatelessWidget {
     required this.participants,
     required this.statusOptions,
     required this.nowUtc,
-    required this.statusResetSeconds,
   });
-
   final List<HonkParticipant> participants;
   final List<HonkStatusOption> statusOptions;
   final DateTime nowUtc;
-  final int statusResetSeconds;
 
   @override
   Widget build(BuildContext context) {
@@ -453,9 +547,14 @@ class _ParticipantsList extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.xs,
+            ),
             child: Text(
-              'Members',
+              'Members (${participants.length})',
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
@@ -464,124 +563,131 @@ class _ParticipantsList extends StatelessWidget {
                 labelsByKey[p.effectiveStatusKey] ?? p.effectiveStatusKey;
             final expiresAt = p.statusExpiresAt;
             final isExpired = expiresAt == null || expiresAt.isBefore(nowUtc);
-            final timeLeft = expiresAt != null && !isExpired
+            final timeLeft = (expiresAt != null && !isExpired)
                 ? expiresAt.difference(nowUtc)
                 : null;
-            final displayName = p.fullName ?? p.username;
-            final initials = displayName.isNotEmpty
-                ? displayName[0].toUpperCase()
-                : '?';
+            final countdownText = timeLeft != null
+                ? _fmtDuration(timeLeft)
+                : null;
 
             return ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHigh,
-                backgroundImage: p.profileUrl != null
-                    ? NetworkImage(p.profileUrl!)
-                    : null,
-                onBackgroundImageError: p.profileUrl != null ? (_, _) {} : null,
-                child: p.profileUrl == null
-                    ? Text(
-                        initials,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      )
-                    : null,
+              leading: UserAvatar(
+                username: p.username,
+                profileUrl: p.profileUrl,
               ),
               title: Row(
                 children: [
                   Expanded(
-                    child: Text(displayName, overflow: TextOverflow.ellipsis),
-                  ),
-                  if (p.isCreator)
-                    const Padding(
-                      padding: EdgeInsets.only(left: 4),
-                      child: Icon(Icons.star_rounded, size: 16),
+                    child: Text(
+                      p.fullName ?? p.username,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                  ),
+                  if (p.isCreator) ...[
+                    const SizedBox(width: 4),
+                    const Text('⭐', style: TextStyle(fontSize: 12)),
+                  ],
                 ],
               ),
-              subtitle: Text(statusLabel),
-              trailing: timeLeft != null
-                  ? _Countdown(remaining: timeLeft)
-                  : null,
+              subtitle: Text(
+                '@${p.username}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              trailing: HonkChip(
+                label: statusLabel,
+                countdown: countdownText,
+                color: _chipColor(statusLabel),
+                bgColor: _chipBgColor(statusLabel),
+              ),
             );
           }),
         ],
       ),
     );
   }
-}
 
-class _Countdown extends StatelessWidget {
-  const _Countdown({required this.remaining});
+  String _fmtDuration(Duration d) {
+    final h = d.inHours;
+    final m = d.inMinutes % 60;
+    final s = d.inSeconds % 60;
+    if (h > 0) return '${h}h ${m}m';
+    if (m > 0) return '${m}m ${s}s';
+    return '${s}s';
+  }
 
-  final Duration remaining;
+  Color _chipColor(String label) {
+    final l = label.toLowerCase();
+    if (l.contains('go') || l.contains('yes')) return AppColors.statusGreen;
+    if (l.contains('maybe') || l.contains('possibly')) {
+      return AppColors.statusAmber;
+    }
+    if (l.contains('no') || l.contains('not')) return AppColors.statusRed;
+    return AppColors.statusPurple;
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    final hours = remaining.inHours;
-    final minutes = remaining.inMinutes % 60;
-    final seconds = remaining.inSeconds % 60;
-    final text = hours > 0
-        ? '${hours}h ${minutes}m'
-        : minutes > 0
-        ? '${minutes}m ${seconds}s'
-        : '${seconds}s';
-
-    return Text(
-      text,
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: Theme.of(context).colorScheme.primary,
-      ),
-    );
+  Color _chipBgColor(String label) {
+    final l = label.toLowerCase();
+    if (l.contains('go') || l.contains('yes')) return AppColors.statusGreenBg;
+    if (l.contains('maybe') || l.contains('possibly')) {
+      return AppColors.statusAmberBg;
+    }
+    if (l.contains('no') || l.contains('not')) return AppColors.statusRedBg;
+    return AppColors.statusPurpleBg;
   }
 }
 
-// ── Honk FAB ─────────────────────────────────────────────────────────────────
+// ── Status FAB ────────────────────────────────────────────────────────────────
 
-class _HonkFab extends StatelessWidget {
-  const _HonkFab({
+class _StatusFab extends StatelessWidget {
+  const _StatusFab({
     required this.details,
     required this.state,
     required this.activityId,
-    required this.isCreator,
     required this.currentParticipant,
     required this.nowUtc,
   });
-
   final HonkActivityDetails details;
   final HonkDetailsState state;
   final String activityId;
-  final bool isCreator;
   final HonkParticipant? currentParticipant;
   final DateTime nowUtc;
 
   @override
   Widget build(BuildContext context) {
     final isSaving = state.isSavingStatus;
+    final me = currentParticipant;
+    final currentStatus = me?.effectiveStatusKey;
+    final expiresAt = me?.statusExpiresAt;
+    final hasActiveStatus =
+        currentStatus != null && expiresAt != null && expiresAt.isAfter(nowUtc);
+    final currentLabel = hasActiveStatus
+        ? (details.statusOptions
+                  .where((o) => o.statusKey == currentStatus)
+                  .firstOrNull
+                  ?.label ??
+              currentStatus)
+        : 'Honk!';
+
     return FloatingActionButton.extended(
       onPressed: isSaving ? null : () => _showStatusSheet(context),
       icon: isSaving
           ? const SizedBox(
               width: 20,
               height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
             )
-          : const Icon(Icons.campaign_rounded),
-      label: Text(
-        isSaving
-            ? 'Updating…'
-            : currentParticipant != null
-            ? 'Honk!'
-            : 'Honk!',
-      ),
+          : const Text('📣', style: TextStyle(fontSize: 20)),
+      label: Text(isSaving ? 'Updating…' : currentLabel),
     );
   }
 
   void _showStatusSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      builder: (sheetContext) => BlocProvider.value(
+      builder: (sheetCtx) => BlocProvider.value(
         value: context.read<HonkDetailsCubit>(),
         child: _StatusPickerSheet(
           statusOptions: details.statusOptions,
@@ -593,21 +699,28 @@ class _HonkFab extends StatelessWidget {
   }
 }
 
+// ── Status picker sheet ───────────────────────────────────────────────────────
+
 class _StatusPickerSheet extends StatelessWidget {
   const _StatusPickerSheet({
     required this.statusOptions,
     required this.currentStatusKey,
     required this.activityId,
   });
-
   final List<HonkStatusOption> statusOptions;
   final String? currentStatusKey;
   final String activityId;
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.xl,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -616,53 +729,50 @@ class _StatusPickerSheet extends StatelessWidget {
             'Set your status',
             style: Theme.of(context).textTheme.titleLarge,
           ),
-          const SizedBox(height: 8),
-          const Text('Others will be notified when you honk.'),
-          const SizedBox(height: 16),
-          ...statusOptions.map((option) {
-            final isCurrent = option.statusKey == currentStatusKey;
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Others will see your status in real time.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          ...statusOptions.map((opt) {
+            final isCurrent = opt.statusKey == currentStatusKey;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: SizedBox(
                 width: double.infinity,
                 child: FilledButton(
                   style: isCurrent
                       ? null
                       : FilledButton.styleFrom(
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHigh,
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onSurface,
+                          backgroundColor: cs.surfaceContainerHigh,
+                          foregroundColor: cs.onSurface,
                         ),
                   onPressed: () {
                     Navigator.of(context).pop();
                     context.read<HonkDetailsCubit>().setStatus(
                       activityId: activityId,
-                      statusKey: option.statusKey,
+                      statusKey: opt.statusKey,
                     );
                   },
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(option.label, style: const TextStyle(fontSize: 16)),
+                      Expanded(child: Text(opt.label)),
                       if (isCurrent)
-                        const Icon(Icons.check_circle_rounded, size: 20),
+                        const Icon(Icons.check_circle_rounded, size: 18),
                     ],
                   ),
                 ),
               ),
             );
           }),
-          const SizedBox(height: 8),
         ],
       ),
     );
   }
 }
 
-// ── Bottom action bar ─────────────────────────────────────────────────────────
+// ── Bottom actions ────────────────────────────────────────────────────────────
 
 class _BottomActions extends StatelessWidget {
   const _BottomActions({
@@ -670,7 +780,6 @@ class _BottomActions extends StatelessWidget {
     required this.isCreator,
     required this.state,
   });
-
   final String activityId;
   final bool isCreator;
   final HonkDetailsState state;
@@ -680,50 +789,41 @@ class _BottomActions extends StatelessWidget {
     final cubit = context.read<HonkDetailsCubit>();
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            if (isCreator) ...[
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: state.isDeleting
-                      ? null
-                      : () => _confirmDelete(context, cubit),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.error,
-                    side: BorderSide(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                  icon: state.isDeleting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.delete_outline),
-                  label: const Text('Delete'),
-                ),
-              ),
-            ] else ...[
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: state.isLeaving
-                      ? null
-                      : () => _confirmLeave(context, cubit),
-                  icon: state.isLeaving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.exit_to_app),
-                  label: const Text('Leave'),
-                ),
-              ),
-            ],
-          ],
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
         ),
+        child: isCreator
+            ? OutlinedButton.icon(
+                onPressed: state.isDeleting
+                    ? null
+                    : () => _confirmDelete(context, cubit),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                  side: BorderSide(color: Theme.of(context).colorScheme.error),
+                ),
+                icon: state.isDeleting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.delete_outline),
+                label: const Text('Delete honk'),
+              )
+            : OutlinedButton.icon(
+                onPressed: state.isLeaving
+                    ? null
+                    : () => _confirmLeave(context, cubit),
+                icon: state.isLeaving
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.exit_to_app),
+                label: const Text('Leave honk'),
+              ),
       ),
     );
   }
@@ -735,10 +835,8 @@ class _BottomActions extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete honk?'),
-        content: const Text(
-          'This permanently removes the honk for all members.',
-        ),
+        title: const Text('Delete honk? 🗑️'),
+        content: const Text('This permanently removes the honk for everyone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -754,9 +852,7 @@ class _BottomActions extends StatelessWidget {
         ],
       ),
     );
-    if (confirmed == true) {
-      await cubit.deleteActivity(activityId);
-    }
+    if (confirmed == true) await cubit.deleteActivity(activityId);
   }
 
   Future<void> _confirmLeave(
@@ -767,7 +863,7 @@ class _BottomActions extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Leave honk?'),
-        content: const Text('You can rejoin later using an invite code.'),
+        content: const Text('You can rejoin with an invite code later.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -780,90 +876,79 @@ class _BottomActions extends StatelessWidget {
         ],
       ),
     );
-    if (confirmed == true) {
-      await cubit.leaveActivity(activityId);
-    }
+    if (confirmed == true) await cubit.leaveActivity(activityId);
   }
 }
 
-// ── Edit honk dialog ──────────────────────────────────────────────────────────
+// ── Edit honk sheet ───────────────────────────────────────────────────────────
 
-class _EditHonkDialog extends StatefulWidget {
-  const _EditHonkDialog({required this.details, required this.activityId});
-
+class _EditHonkSheet extends StatefulWidget {
+  const _EditHonkSheet({required this.details, required this.activityId});
   final HonkActivityDetails details;
   final String activityId;
 
   @override
-  State<_EditHonkDialog> createState() => _EditHonkDialogState();
+  State<_EditHonkSheet> createState() => _EditHonkSheetState();
 }
 
-class _EditHonkDialogState extends State<_EditHonkDialog> {
+class _EditHonkSheetState extends State<_EditHonkSheet> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _activityCtrl;
-  late final TextEditingController _locationCtrl;
-  late final TextEditingController _detailsCtrl;
-
-  late int _statusResetSeconds;
-  late final List<_EditStatusRow> _statusRows;
-  late int _defaultStatusIndex;
+  late final TextEditingController _actCtrl;
+  late final TextEditingController _locCtrl;
+  late final TextEditingController _detCtrl;
+  late int _resetSecs;
+  late final List<_StatusRow> _rows;
+  late int _defaultIdx;
 
   @override
   void initState() {
     super.initState();
     final a = widget.details.activity;
-    _activityCtrl = TextEditingController(text: a.activity);
-    _locationCtrl = TextEditingController(text: a.location);
-    _detailsCtrl = TextEditingController(text: a.details ?? '');
-    _statusResetSeconds = a.statusResetSeconds;
-
-    // Status options
-    final options = widget.details.statusOptions;
-    _statusRows = options
-        .map((o) => _EditStatusRow(statusKey: o.statusKey, label: o.label))
-        .toList();
-    _defaultStatusIndex = options.indexWhere((o) => o.isDefault);
-    if (_defaultStatusIndex < 0) _defaultStatusIndex = 0;
+    _actCtrl = TextEditingController(text: a.activity);
+    _locCtrl = TextEditingController(text: a.location);
+    _detCtrl = TextEditingController(text: a.details ?? '');
+    _resetSecs = a.statusResetSeconds;
+    final opts = widget.details.statusOptions;
+    _rows = opts.map((o) => _StatusRow(o.statusKey, o.label)).toList();
+    _defaultIdx = opts.indexWhere((o) => o.isDefault).clamp(0, opts.length - 1);
   }
 
   @override
   void dispose() {
-    _activityCtrl.dispose();
-    _locationCtrl.dispose();
-    _detailsCtrl.dispose();
-    for (final r in _statusRows) {
+    _actCtrl.dispose();
+    _locCtrl.dispose();
+    _detCtrl.dispose();
+    for (final r in _rows) {
       r.dispose();
     }
     super.dispose();
   }
 
-  List<HonkStatusOption>? _buildStatusOptions() {
-    if (_statusRows.length < 2) return null;
-    final options = <HonkStatusOption>[];
-    for (int i = 0; i < _statusRows.length; i++) {
-      final key = _statusRows[i].statusKeyCtrl.text.trim();
-      final label = _statusRows[i].labelCtrl.text.trim();
-      if (key.isEmpty || label.isEmpty) return null;
-      if (!RegExp(r'^[a-z0-9_]+$').hasMatch(key)) return null;
-      options.add(
+  List<HonkStatusOption>? _buildOpts() {
+    if (_rows.length < 2) return null;
+    final opts = <HonkStatusOption>[];
+    for (var i = 0; i < _rows.length; i++) {
+      final k = _rows[i].keyCtrl.text.trim();
+      final l = _rows[i].labelCtrl.text.trim();
+      if (k.isEmpty || l.isEmpty) return null;
+      if (!RegExp(r'^[a-z0-9_]+$').hasMatch(k)) return null;
+      opts.add(
         HonkStatusOption(
-          statusKey: key,
-          label: label,
+          statusKey: k,
+          label: l,
           sortOrder: i,
-          isDefault: i == _defaultStatusIndex,
+          isDefault: i == _defaultIdx,
           isActive: true,
         ),
       );
     }
-    if (options.map((o) => o.statusKey).toSet().length != options.length) {
-      return null;
-    }
-    return options;
+    if (opts.map((o) => o.statusKey).toSet().length != opts.length) return null;
+    return opts;
   }
 
   void _save() {
     if (_formKey.currentState?.validate() != true) return;
-    final opts = _buildStatusOptions();
+    final opts = _buildOpts();
     if (opts == null) {
       ScaffoldMessenger.of(
         context,
@@ -873,49 +958,69 @@ class _EditHonkDialogState extends State<_EditHonkDialog> {
     Navigator.of(context).pop();
     context.read<HonkDetailsCubit>().updateActivity(
       activityId: widget.activityId,
-      activity: _activityCtrl.text.trim(),
-      location: _locationCtrl.text.trim(),
-      details: _detailsCtrl.text.trim().isEmpty
-          ? null
-          : _detailsCtrl.text.trim(),
-      statusResetSeconds: _statusResetSeconds,
+      activity: _actCtrl.text.trim(),
+      location: _locCtrl.text.trim(),
+      details: _detCtrl.text.trim().isEmpty ? null : _detCtrl.text.trim(),
+      statusResetSeconds: _resetSecs,
       statusOptions: opts,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Edit Honk'),
-      scrollable: true,
-      content: Form(
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (ctx, scrollCtrl) => Form(
         key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
+          controller: scrollCtrl,
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.sm,
+            AppSpacing.lg,
+            AppSpacing.xl,
+          ),
           children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text('Edit Honk ✏️', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: AppSpacing.lg),
             TextFormField(
-              controller: _activityCtrl,
+              controller: _actCtrl,
               decoration: const InputDecoration(labelText: 'Activity *'),
               validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  v == null || v.trim().isEmpty ? 'Required' : null,
             ),
+            const SizedBox(height: AppSpacing.md),
             TextFormField(
-              controller: _locationCtrl,
+              controller: _locCtrl,
               decoration: const InputDecoration(labelText: 'Location *'),
               validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  v == null || v.trim().isEmpty ? 'Required' : null,
             ),
+            const SizedBox(height: AppSpacing.md),
             TextFormField(
-              controller: _detailsCtrl,
+              controller: _detCtrl,
               decoration: const InputDecoration(
                 labelText: 'Details (optional)',
               ),
               maxLines: 2,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             DropdownButtonFormField<int>(
-              initialValue: _statusResetSeconds,
+              initialValue: _resetSecs,
               decoration: const InputDecoration(
                 labelText: 'Status resets after',
               ),
@@ -926,46 +1031,59 @@ class _EditHonkDialogState extends State<_EditHonkDialog> {
                 DropdownMenuItem(value: 7200, child: Text('2 hours')),
               ],
               onChanged: (v) {
-                if (v != null) setState(() => _statusResetSeconds = v);
+                if (v != null) setState(() => _resetSecs = v);
               },
             ),
-            const SizedBox(height: 12),
-            ...List.generate(_statusRows.length, (i) {
-              final row = _statusRows[i];
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Status options',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            ...List.generate(_rows.length, (i) {
+              final row = _rows[i];
               return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: () => setState(() => _defaultStatusIndex = i),
+                      onPressed: () => setState(() => _defaultIdx = i),
                       icon: Icon(
-                        i == _defaultStatusIndex
+                        i == _defaultIdx
                             ? Icons.radio_button_checked
                             : Icons.radio_button_unchecked,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     Expanded(
                       child: TextField(
-                        controller: row.statusKeyCtrl,
-                        decoration: const InputDecoration(labelText: 'Key'),
+                        controller: row.keyCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Key',
+                          isDense: true,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: TextField(
                         controller: row.labelCtrl,
-                        decoration: const InputDecoration(labelText: 'Label'),
+                        decoration: const InputDecoration(
+                          labelText: 'Label',
+                          isDense: true,
+                        ),
                       ),
                     ),
                     IconButton(
-                      onPressed: _statusRows.length <= 2
+                      onPressed: _rows.length <= 2
                           ? null
                           : () {
                               setState(() {
-                                _statusRows.removeAt(i).dispose();
-                                if (_defaultStatusIndex >= _statusRows.length) {
-                                  _defaultStatusIndex = _statusRows.length - 1;
-                                }
+                                _rows.removeAt(i).dispose();
+                                _defaultIdx = _defaultIdx.clamp(
+                                  0,
+                                  _rows.length - 1,
+                                );
                               });
                             },
                       icon: const Icon(Icons.remove_circle_outline),
@@ -974,39 +1092,45 @@ class _EditHonkDialogState extends State<_EditHonkDialog> {
                 ),
               );
             }),
+            TextButton.icon(
+              onPressed: _rows.length >= 8
+                  ? null
+                  : () => setState(() {
+                      _rows.add(
+                        _StatusRow(
+                          'status_${_rows.length + 1}',
+                          'Option ${_rows.length + 1}',
+                        ),
+                      );
+                    }),
+              icon: const Icon(Icons.add),
+              label: const Text('Add option'),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton(onPressed: _save, child: const Text('Save')),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(onPressed: _save, child: const Text('Save')),
-      ],
     );
   }
 }
 
-class _EditStatusRow {
-  _EditStatusRow({required String statusKey, required String label})
-    : statusKeyCtrl = TextEditingController(text: statusKey),
+class _StatusRow {
+  _StatusRow(String key, String label)
+    : keyCtrl = TextEditingController(text: key),
       labelCtrl = TextEditingController(text: label);
-
-  final TextEditingController statusKeyCtrl;
+  final TextEditingController keyCtrl;
   final TextEditingController labelCtrl;
-
   void dispose() {
-    statusKeyCtrl.dispose();
+    keyCtrl.dispose();
     labelCtrl.dispose();
   }
 }
 
 // ── Copyable row ──────────────────────────────────────────────────────────────
 
-class _CopyableRow extends StatelessWidget {
-  const _CopyableRow({required this.label, required this.value});
-
+class _CopyRow extends StatelessWidget {
+  const _CopyRow({required this.label, required this.value});
   final String label;
   final String value;
 
@@ -1021,9 +1145,8 @@ class _CopyableRow extends StatelessWidget {
               Text(label, style: Theme.of(context).textTheme.labelSmall),
               Text(
                 value,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontFamily: 'monospace'),
+                style: GoogleFonts.sourceCodePro(fontSize: 13),
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

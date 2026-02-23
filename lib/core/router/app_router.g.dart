@@ -9,6 +9,7 @@ part of 'app_router.dart';
 List<RouteBase> get $appRoutes => [
   $homeRoute,
   $inviteJoinRoute,
+  $splashRoute,
   $loginRoute,
   $signUpRoute,
   $forgotPasswordRoute,
@@ -20,14 +21,8 @@ RouteBase get $homeRoute => GoRouteData.$route(
   path: '/',
   factory: $HomeRoute._fromState,
   routes: [
-    GoRouteData.$route(
-      path: 'activities/create',
-      factory: $CreateHonkRoute._fromState,
-    ),
-    GoRouteData.$route(
-      path: 'activities/:activityId',
-      factory: $HonkDetailsRoute._fromState,
-    ),
+    GoRouteData.$route(path: 'activities/create', factory: $CreateHonkRoute._fromState),
+    GoRouteData.$route(path: 'activities/:activityId', factory: $HonkDetailsRoute._fromState),
     GoRouteData.$route(path: 'settings', factory: $SettingsRoute._fromState),
     GoRouteData.$route(path: 'scan', factory: $QrScannerRoute._fromState),
   ],
@@ -46,16 +41,14 @@ mixin $HomeRoute on GoRouteData {
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
   @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
 
   @override
   void replace(BuildContext context) => context.replace(location);
 }
 
 mixin $CreateHonkRoute on GoRouteData {
-  static CreateHonkRoute _fromState(GoRouterState state) =>
-      const CreateHonkRoute();
+  static CreateHonkRoute _fromState(GoRouterState state) => const CreateHonkRoute();
 
   @override
   String get location => GoRouteData.$location('/activities/create');
@@ -67,8 +60,7 @@ mixin $CreateHonkRoute on GoRouteData {
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
   @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
 
   @override
   void replace(BuildContext context) => context.replace(location);
@@ -81,9 +73,8 @@ mixin $HonkDetailsRoute on GoRouteData {
   HonkDetailsRoute get _self => this as HonkDetailsRoute;
 
   @override
-  String get location => GoRouteData.$location(
-    '/activities/${Uri.encodeComponent(_self.activityId)}',
-  );
+  String get location =>
+      GoRouteData.$location('/activities/${Uri.encodeComponent(_self.activityId)}');
 
   @override
   void go(BuildContext context) => context.go(location);
@@ -92,8 +83,7 @@ mixin $HonkDetailsRoute on GoRouteData {
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
   @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
 
   @override
   void replace(BuildContext context) => context.replace(location);
@@ -112,16 +102,14 @@ mixin $SettingsRoute on GoRouteData {
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
   @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
 
   @override
   void replace(BuildContext context) => context.replace(location);
 }
 
 mixin $QrScannerRoute on GoRouteData {
-  static QrScannerRoute _fromState(GoRouterState state) =>
-      const QrScannerRoute();
+  static QrScannerRoute _fromState(GoRouterState state) => const QrScannerRoute();
 
   @override
   String get location => GoRouteData.$location('/scan');
@@ -133,17 +121,14 @@ mixin $QrScannerRoute on GoRouteData {
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
   @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
 
   @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-RouteBase get $inviteJoinRoute => GoRouteData.$route(
-  path: '/join/:inviteCode',
-  factory: $InviteJoinRoute._fromState,
-);
+RouteBase get $inviteJoinRoute =>
+    GoRouteData.$route(path: '/join/:inviteCode', factory: $InviteJoinRoute._fromState);
 
 mixin $InviteJoinRoute on GoRouteData {
   static InviteJoinRoute _fromState(GoRouterState state) =>
@@ -152,8 +137,7 @@ mixin $InviteJoinRoute on GoRouteData {
   InviteJoinRoute get _self => this as InviteJoinRoute;
 
   @override
-  String get location =>
-      GoRouteData.$location('/join/${Uri.encodeComponent(_self.inviteCode)}');
+  String get location => GoRouteData.$location('/join/${Uri.encodeComponent(_self.inviteCode)}');
 
   @override
   void go(BuildContext context) => context.go(location);
@@ -162,15 +146,34 @@ mixin $InviteJoinRoute on GoRouteData {
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
   @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
 
   @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-RouteBase get $loginRoute =>
-    GoRouteData.$route(path: '/login', factory: $LoginRoute._fromState);
+RouteBase get $splashRoute => GoRouteData.$route(path: '/splash', factory: $SplashRoute._fromState);
+
+mixin $SplashRoute on GoRouteData {
+  static SplashRoute _fromState(GoRouterState state) => const SplashRoute();
+
+  @override
+  String get location => GoRouteData.$location('/splash');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $loginRoute => GoRouteData.$route(path: '/login', factory: $LoginRoute._fromState);
 
 mixin $LoginRoute on GoRouteData {
   static LoginRoute _fromState(GoRouterState state) => const LoginRoute();
@@ -185,15 +188,13 @@ mixin $LoginRoute on GoRouteData {
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
   @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
 
   @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-RouteBase get $signUpRoute =>
-    GoRouteData.$route(path: '/signup', factory: $SignUpRoute._fromState);
+RouteBase get $signUpRoute => GoRouteData.$route(path: '/signup', factory: $SignUpRoute._fromState);
 
 mixin $SignUpRoute on GoRouteData {
   static SignUpRoute _fromState(GoRouterState state) => const SignUpRoute();
@@ -208,21 +209,17 @@ mixin $SignUpRoute on GoRouteData {
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
   @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
 
   @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-RouteBase get $forgotPasswordRoute => GoRouteData.$route(
-  path: '/forgot-password',
-  factory: $ForgotPasswordRoute._fromState,
-);
+RouteBase get $forgotPasswordRoute =>
+    GoRouteData.$route(path: '/forgot-password', factory: $ForgotPasswordRoute._fromState);
 
 mixin $ForgotPasswordRoute on GoRouteData {
-  static ForgotPasswordRoute _fromState(GoRouterState state) =>
-      const ForgotPasswordRoute();
+  static ForgotPasswordRoute _fromState(GoRouterState state) => const ForgotPasswordRoute();
 
   @override
   String get location => GoRouteData.$location('/forgot-password');
@@ -234,21 +231,17 @@ mixin $ForgotPasswordRoute on GoRouteData {
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
   @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
 
   @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-RouteBase get $updatePasswordRoute => GoRouteData.$route(
-  path: '/update-password',
-  factory: $UpdatePasswordRoute._fromState,
-);
+RouteBase get $updatePasswordRoute =>
+    GoRouteData.$route(path: '/update-password', factory: $UpdatePasswordRoute._fromState);
 
 mixin $UpdatePasswordRoute on GoRouteData {
-  static UpdatePasswordRoute _fromState(GoRouterState state) =>
-      const UpdatePasswordRoute();
+  static UpdatePasswordRoute _fromState(GoRouterState state) => const UpdatePasswordRoute();
 
   @override
   String get location => GoRouteData.$location('/update-password');
@@ -260,17 +253,14 @@ mixin $UpdatePasswordRoute on GoRouteData {
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
   @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
 
   @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-RouteBase get $emailVerificationRoute => GoRouteData.$route(
-  path: '/verify-email/:email',
-  factory: $EmailVerificationRoute._fromState,
-);
+RouteBase get $emailVerificationRoute =>
+    GoRouteData.$route(path: '/verify-email/:email', factory: $EmailVerificationRoute._fromState);
 
 mixin $EmailVerificationRoute on GoRouteData {
   static EmailVerificationRoute _fromState(GoRouterState state) =>
@@ -279,9 +269,7 @@ mixin $EmailVerificationRoute on GoRouteData {
   EmailVerificationRoute get _self => this as EmailVerificationRoute;
 
   @override
-  String get location => GoRouteData.$location(
-    '/verify-email/${Uri.encodeComponent(_self.email)}',
-  );
+  String get location => GoRouteData.$location('/verify-email/${Uri.encodeComponent(_self.email)}');
 
   @override
   void go(BuildContext context) => context.go(location);
@@ -290,8 +278,7 @@ mixin $EmailVerificationRoute on GoRouteData {
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
   @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
 
   @override
   void replace(BuildContext context) => context.replace(location);

@@ -32,19 +32,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthStateChanged>(_onAuthStateChanged);
 
     _authStateSubscription = _authRepository.authStateChanges.listen(
-      (event) => add(
-        AuthEvent.authStateChanged(
-          user: event.user,
-          eventType: event.eventType.name,
-        ),
-      ),
+      (event) => add(AuthEvent.authStateChanged(user: event.user, eventType: event.eventType.name)),
     );
   }
 
-  Future<void> _onCheckAuthStatus(
-    CheckAuthStatus event,
-    Emitter<AuthState> emit,
-  ) async {
+  Future<void> _onCheckAuthStatus(CheckAuthStatus event, Emitter<AuthState> emit) async {
     final user = _authRepository.currentUser;
     if (user != null) {
       emit(AuthState.authenticated(user));
@@ -93,10 +85,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onSignInWithGoogle(
-    SignInWithGoogle event,
-    Emitter<AuthState> emit,
-  ) async {
+  Future<void> _onSignInWithGoogle(SignInWithGoogle event, Emitter<AuthState> emit) async {
     emit(const AuthState.loading());
 
     final result = await _authRepository.signInWithGoogle();
@@ -131,9 +120,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(const AuthState.loading());
 
-    final failure = await _authRepository.sendPasswordResetEmail(
-      email: event.email,
-    );
+    final failure = await _authRepository.sendPasswordResetEmail(email: event.email);
 
     if (failure != null) {
       emit(AuthState.error(failure));
@@ -142,15 +129,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onUpdatePassword(
-    UpdatePassword event,
-    Emitter<AuthState> emit,
-  ) async {
+  Future<void> _onUpdatePassword(UpdatePassword event, Emitter<AuthState> emit) async {
     emit(const AuthState.loading());
 
-    final failure = await _authRepository.updatePassword(
-      newPassword: event.newPassword,
-    );
+    final failure = await _authRepository.updatePassword(newPassword: event.newPassword);
 
     if (failure != null) {
       emit(AuthState.error(failure));
@@ -165,9 +147,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(const AuthState.loading());
 
-    final failure = await _authRepository.resendVerificationEmail(
-      email: event.email,
-    );
+    final failure = await _authRepository.resendVerificationEmail(email: event.email);
 
     if (failure != null) {
       emit(AuthState.error(failure));
@@ -199,8 +179,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   void _onAuthStateChanged(AuthStateChanged event, Emitter<AuthState> emit) {
-    if (event.eventType == AuthChangeEventType.passwordRecovery.name &&
-        event.user != null) {
+    if (event.eventType == AuthChangeEventType.passwordRecovery.name && event.user != null) {
       emit(AuthState.passwordResetReady(event.user!));
       return;
     }

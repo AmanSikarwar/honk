@@ -30,8 +30,9 @@ abstract class IHonkRepository {
 
   /// Returns `(activityId, isPending)` where [isPending] means the request
   /// is waiting for creator approval.
-  TaskEither<MainFailure, ({String activityId, bool isPending})>
-  joinByInviteCode({required String inviteCode});
+  TaskEither<MainFailure, ({String activityId, bool isPending})> joinByInviteCode({
+    required String inviteCode,
+  });
 
   TaskEither<MainFailure, Unit> leaveActivity({required String activityId});
 

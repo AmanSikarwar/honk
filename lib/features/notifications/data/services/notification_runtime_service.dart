@@ -49,9 +49,7 @@ class NotificationRuntimeService implements INotificationRuntimeService {
       );
 
       await _localNotifications
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(_channel);
 
       await _messaging.setForegroundNotificationPresentationOptions(
@@ -60,11 +58,10 @@ class NotificationRuntimeService implements INotificationRuntimeService {
         sound: true,
       );
 
-      _onMessageSubscription = FirebaseMessaging.onMessage.listen(
-        _showForegroundNotification,
+      _onMessageSubscription = FirebaseMessaging.onMessage.listen(_showForegroundNotification);
+      _onMessageOpenedAppSubscription = FirebaseMessaging.onMessageOpenedApp.listen(
+        _handleMessageOpenedApp,
       );
-      _onMessageOpenedAppSubscription = FirebaseMessaging.onMessageOpenedApp
-          .listen(_handleMessageOpenedApp);
 
       final initialMessage = await _messaging.getInitialMessage();
       if (initialMessage != null) {
@@ -84,9 +81,7 @@ class NotificationRuntimeService implements INotificationRuntimeService {
     }
 
     final activityId = _extractActivityId(message.data);
-    final payload = activityId != null && activityId.isNotEmpty
-        ? activityId
-        : null;
+    final payload = activityId != null && activityId.isNotEmpty ? activityId : null;
 
     try {
       final notificationDetails = NotificationDetails(
@@ -97,11 +92,7 @@ class NotificationRuntimeService implements INotificationRuntimeService {
           importance: Importance.high,
           priority: Priority.high,
         ),
-        iOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
+        iOS: DarwinNotificationDetails(presentAlert: true, presentBadge: true, presentSound: true),
       );
 
       await _localNotifications.show(

@@ -18,11 +18,9 @@ class AuthEvent with _$AuthEvent {
 
   const factory AuthEvent.signOut() = SignOut;
 
-  const factory AuthEvent.sendPasswordResetEmail({required String email}) =
-      SendPasswordResetEmail;
+  const factory AuthEvent.sendPasswordResetEmail({required String email}) = SendPasswordResetEmail;
 
-  const factory AuthEvent.updatePassword({required String newPassword}) =
-      UpdatePassword;
+  const factory AuthEvent.updatePassword({required String newPassword}) = UpdatePassword;
 
   const factory AuthEvent.resendVerificationEmail({required String email}) =
       ResendVerificationEmail;
@@ -44,8 +42,6 @@ class AuthEvent with _$AuthEvent {
     String? type,
   }) = HandleDeepLinkSession;
 
-  const factory AuthEvent.authStateChanged({
-    AppUser? user,
-    required String eventType,
-  }) = AuthStateChanged;
+  const factory AuthEvent.authStateChanged({AppUser? user, required String eventType}) =
+      AuthStateChanged;
 }

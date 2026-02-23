@@ -13,8 +13,7 @@ part 'join_honk_cubit.freezed.dart';
 
 @injectable
 class JoinHonkCubit extends Cubit<JoinHonkState> {
-  JoinHonkCubit(this._repository, this._supabase)
-    : super(const JoinHonkState.idle());
+  JoinHonkCubit(this._repository, this._supabase) : super(const JoinHonkState.idle());
 
   final IHonkRepository _repository;
   final SupabaseClient _supabase;
@@ -24,9 +23,7 @@ class JoinHonkCubit extends Cubit<JoinHonkState> {
     final trimmed = code.trim();
     if (trimmed.isEmpty) return;
     emit(const JoinHonkState.loading());
-    final result = await _repository
-        .joinByInviteCode(inviteCode: trimmed)
-        .run();
+    final result = await _repository.joinByInviteCode(inviteCode: trimmed).run();
     result.match((failure) => emit(JoinHonkState.failure(failure)), (record) {
       if (record.isPending) {
         emit(JoinHonkState.pendingApproval(record.activityId));

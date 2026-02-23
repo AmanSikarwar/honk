@@ -7,6 +7,7 @@ import '../../features/auth/presentation/pages/email_verification_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/signup_page.dart';
+import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/update_password_page.dart';
 import '../../features/honk/presentation/bloc/honk_feed_bloc.dart';
 import '../../features/honk/presentation/cubit/create_honk_cubit.dart';
@@ -109,6 +110,16 @@ class InviteJoinRoute extends GoRouteData with $InviteJoinRoute {
   }
 }
 
+@TypedGoRoute<SplashRoute>(path: '/splash')
+class SplashRoute extends GoRouteData with $SplashRoute {
+  const SplashRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return const SplashPage();
+  }
+}
+
 @TypedGoRoute<LoginRoute>(path: '/login')
 class LoginRoute extends GoRouteData with $LoginRoute {
   const LoginRoute();
@@ -163,13 +174,14 @@ class EmailVerificationRoute extends GoRouteData with $EmailVerificationRoute {
 
 GoRouter createAppRouter(AuthBloc authBloc) {
   return GoRouter(
-    initialLocation: const LoginRoute().location,
+    initialLocation: const SplashRoute().location,
     refreshListenable: GoRouterRefreshStream(authBloc.stream),
     redirect: (context, state) {
       final authState = authBloc.state;
       final isAuthenticated = authState is Authenticated;
       final isPasswordResetReady = authState is PasswordResetReady;
-      final isAuthRoute =
+      final isUnauthenticatedRoute =
+          state.matchedLocation == const SplashRoute().location ||
           state.matchedLocation == const LoginRoute().location ||
           state.matchedLocation == const SignUpRoute().location ||
           state.matchedLocation == const ForgotPasswordRoute().location ||
@@ -189,12 +201,14 @@ GoRouter createAppRouter(AuthBloc authBloc) {
         return null;
       }
 
-      if (isAuthenticated && isAuthRoute) {
+      if (isAuthenticated && isUnauthenticatedRoute) {
         return const HomeRoute().location;
       }
 
-      if (!isAuthenticated && !isAuthRoute && !isPasswordResetReady) {
-        return const LoginRoute().location;
+      if (!isAuthenticated &&
+          !isUnauthenticatedRoute &&
+          !isPasswordResetReady) {
+        return const SplashRoute().location;
       }
 
       if (state.matchedLocation == const UpdatePasswordRoute().location) {

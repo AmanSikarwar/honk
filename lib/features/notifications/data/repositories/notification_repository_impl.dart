@@ -28,9 +28,7 @@ class NotificationRepositoryImpl implements INotificationRepository {
       );
 
       if (settings.authorizationStatus == AuthorizationStatus.denied) {
-        throw const MainFailure.permissionFailure(
-          'Notification permission denied.',
-        );
+        throw const MainFailure.permissionFailure('Notification permission denied.');
       }
 
       return unit;
@@ -39,10 +37,7 @@ class NotificationRepositoryImpl implements INotificationRepository {
 
   @override
   TaskEither<MainFailure, String?> getFcmToken() {
-    return TaskEither<MainFailure, String?>.tryCatch(
-      _messaging.getToken,
-      mapErrorToMainFailure,
-    );
+    return TaskEither<MainFailure, String?>.tryCatch(_messaging.getToken, mapErrorToMainFailure);
   }
 
   @override
@@ -61,13 +56,11 @@ class NotificationRepositoryImpl implements INotificationRepository {
       }
 
       return TaskEither<MainFailure, Unit>.tryCatch(() async {
-        final fallbackUsername =
-            user.email?.split('@').first ?? 'user_${user.id.substring(0, 8)}';
+        final fallbackUsername = user.email?.split('@').first ?? 'user_${user.id.substring(0, 8)}';
 
         await _supabase.from('profiles').upsert({
           'id': user.id,
-          'username':
-              user.userMetadata?['username'] as String? ?? fallbackUsername,
+          'username': user.userMetadata?['username'] as String? ?? fallbackUsername,
           'fcm_token': token,
         }, onConflict: 'id');
 

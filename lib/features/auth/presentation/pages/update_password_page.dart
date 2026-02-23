@@ -2,195 +2,125 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/router/app_router.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../domain/entities/auth_failure.dart';
 import '../bloc/auth_bloc.dart';
+import '../widgets/auth_widgets.dart';
 
 class UpdatePasswordPage extends StatefulWidget {
   const UpdatePasswordPage({super.key});
-
   @override
   State<UpdatePasswordPage> createState() => _UpdatePasswordPageState();
 }
 
 class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
   final _formKey = GlobalKey<FormState>();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
+  final _passCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
 
   @override
   void dispose() {
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
+    _passCtrl.dispose();
+    _confirmCtrl.dispose();
     super.dispose();
   }
 
-  void _onUpdatePassword() {
+  void _update() {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<AuthBloc>().add(
-        AuthEvent.updatePassword(newPassword: _passwordController.text),
+        AuthEvent.updatePassword(newPassword: _passCtrl.text),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text('Update Password'),
-      ),
-      body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is PasswordUpdated) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Password updated successfully!'),
-                backgroundColor: Colors.green,
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (ctx, state) {
+        if (state is PasswordUpdated) {
+          ScaffoldMessenger.of(
+            ctx,
+          ).showSnackBar(const SnackBar(content: Text('Password updated!')));
+          const HomeRoute().go(ctx);
+        } else if (state is AuthError) {
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            SnackBar(
+              content: Text(
+                state.failure.map(
+                  serverError: (e) => e.message,
+                  emailAlreadyInUse: (_) => 'Email already in use',
+                  invalidEmailAndPasswordCombination: (_) =>
+                      'Invalid credentials',
+                  weakPassword: (_) =>
+                      'Password too weak — use at least 6 chars',
+                  userNotFound: (_) => 'User not found',
+                  emailNotVerified: (_) => 'Email not verified',
+                  tooManyRequests: (_) => 'Too many attempts',
+                  networkError: (_) => 'No internet connection',
+                  cancelledByUser: (_) => 'Cancelled',
+                  unknown: (e) => e.message,
+                ),
               ),
-            );
-            const HomeRoute().go(context);
-          } else if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(_getErrorMessage(state.failure)),
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-            );
-          }
-        },
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+          );
+        }
+      },
+      child: AuthScaffold(
+        title: 'New password 🛡️',
+        subtitle: 'Choose a strong password',
+        canPop: false,
+        child: Form(
+          key: _formKey,
+          child: BlocBuilder<AuthBloc, AuthState>(
+            builder: (ctx, state) {
+              final loading = state is AuthLoading;
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Icon
-                  Icon(
-                    Icons.lock_outlined,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 24),
-
-                  Text(
-                    'Enter your new password below.',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
+                  AuthField(
+                    controller: _passCtrl,
+                    label: 'New password',
+                    prefixIcon: Icons.lock_outlined,
+                    obscureText: true,
                     textInputAction: TextInputAction.next,
-                    decoration: InputDecoration(
-                      labelText: 'New Password',
-                      prefixIcon: const Icon(Icons.lock_outlined),
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
+                    enabled: !loading,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Enter a password';
+                      if (v.length < 6) return 'At least 6 characters';
                       return null;
                     },
                   ),
-                  const SizedBox(height: 16),
-
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    obscureText: _obscureConfirmPassword,
+                  const SizedBox(height: AppSpacing.md),
+                  AuthField(
+                    controller: _confirmCtrl,
+                    label: 'Confirm password',
+                    prefixIcon: Icons.lock_outlined,
+                    obscureText: true,
                     textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _onUpdatePassword(),
-                    decoration: InputDecoration(
-                      labelText: 'Confirm New Password',
-                      prefixIcon: const Icon(Icons.lock_outlined),
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureConfirmPassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscureConfirmPassword = !_obscureConfirmPassword;
-                          });
-                        },
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please confirm your password';
+                    onFieldSubmitted: (_) => _update(),
+                    enabled: !loading,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) {
+                        return 'Confirm your password';
                       }
-                      if (value != _passwordController.text) {
-                        return 'Passwords do not match';
-                      }
+                      if (v != _passCtrl.text) return 'Passwords do not match';
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
-
-                  BlocBuilder<AuthBloc, AuthState>(
-                    builder: (context, state) {
-                      final isLoading = state is AuthLoading;
-                      return FilledButton(
-                        onPressed: isLoading ? null : _onUpdatePassword,
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text('Update Password'),
-                      );
-                    },
+                  const SizedBox(height: AppSpacing.lg),
+                  FilledButton(
+                    onPressed: loading ? null : _update,
+                    child: loading
+                        ? const SmallSpinner()
+                        : const Text('Update password'),
                   ),
                 ],
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
-    );
-  }
-
-  String _getErrorMessage(dynamic failure) {
-    return failure.when(
-      serverError: (message) => message,
-      emailAlreadyInUse: () => 'This email is already registered',
-      invalidEmailAndPasswordCombination: () => 'Invalid email or password',
-      weakPassword: () => 'Password is too weak',
-      userNotFound: () => 'No account found with this email',
-      emailNotVerified: () => 'Please verify your email first',
-      tooManyRequests: () => 'Too many attempts. Please try again later',
-      networkError: () => 'Network error. Please check your connection',
-      cancelledByUser: () => 'Operation cancelled',
-      unknown: (message) => message,
     );
   }
 }

@@ -21,16 +21,13 @@ class HonkFeedBloc extends Bloc<HonkFeedEvent, HonkFeedState> {
   }
 
   final IHonkRepository _honkRepository;
-  StreamSubscription<Either<MainFailure, List<HonkActivitySummary>>>?
-  _honkFeedSubscription;
+  StreamSubscription<Either<MainFailure, List<HonkActivitySummary>>>? _honkFeedSubscription;
 
   Future<void> _onStarted(_Started event, Emitter<HonkFeedState> emit) async {
     emit(const HonkFeedState.loadInProgress());
 
     await _honkFeedSubscription?.cancel();
-    _honkFeedSubscription = _honkRepository.watchActivities().listen((
-      result,
-    ) {
+    _honkFeedSubscription = _honkRepository.watchActivities().listen((result) {
       add(HonkFeedEvent.honksUpdated(result));
     });
   }

@@ -75,10 +75,7 @@ class DeepLinkHandler {
     try {
       return await _appLinks.getInitialLink();
     } catch (e) {
-      developer.log(
-        'Error getting initial deep link: $e',
-        name: 'DeepLinkHandler',
-      );
+      developer.log('Error getting initial deep link: $e', name: 'DeepLinkHandler');
       return null;
     }
   }

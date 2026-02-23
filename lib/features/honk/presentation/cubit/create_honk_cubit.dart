@@ -23,13 +23,7 @@ class CreateHonkCubit extends Cubit<CreateHonkState> {
     required int statusResetSeconds,
     required List<HonkStatusOption> statusOptions,
   }) async {
-    emit(
-      state.copyWith(
-        isSubmitting: true,
-        createdActivity: null,
-        submissionFailure: null,
-      ),
-    );
+    emit(state.copyWith(isSubmitting: true, createdActivity: null, submissionFailure: null));
     final result = await _repository
         .createActivity(
           activity: activity,
@@ -40,20 +34,12 @@ class CreateHonkCubit extends Cubit<CreateHonkState> {
         )
         .run();
     result.match(
-      (failure) =>
-          emit(state.copyWith(isSubmitting: false, submissionFailure: failure)),
-      (created) =>
-          emit(state.copyWith(isSubmitting: false, createdActivity: created)),
+      (failure) => emit(state.copyWith(isSubmitting: false, submissionFailure: failure)),
+      (created) => emit(state.copyWith(isSubmitting: false, createdActivity: created)),
     );
   }
 
   void resetSubmission() {
-    emit(
-      state.copyWith(
-        createdActivity: null,
-        submissionFailure: null,
-        isSubmitting: false,
-      ),
-    );
+    emit(state.copyWith(createdActivity: null, submissionFailure: null, isSubmitting: false));
   }
 }

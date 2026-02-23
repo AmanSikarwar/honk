@@ -34,28 +34,21 @@ class AuthRepositoryImpl implements AuthRepository {
     return _auth.onAuthStateChange.map((event) {
       final user = event.session?.user;
       final appUser = user != null ? _mapSupabaseUser(user) : null;
-      return AuthStateChangeEvent(
-        user: appUser,
-        eventType: _mapAuthChangeEvent(event.event),
-      );
+      return AuthStateChangeEvent(user: appUser, eventType: _mapAuthChangeEvent(event.event));
     });
   }
 
   AuthChangeEventType _mapAuthChangeEvent(supabase.AuthChangeEvent event) {
     return switch (event) {
-      supabase.AuthChangeEvent.initialSession =>
-        AuthChangeEventType.initialSession,
+      supabase.AuthChangeEvent.initialSession => AuthChangeEventType.initialSession,
       supabase.AuthChangeEvent.signedIn => AuthChangeEventType.signedIn,
       supabase.AuthChangeEvent.signedOut => AuthChangeEventType.signedOut,
-      supabase.AuthChangeEvent.passwordRecovery =>
-        AuthChangeEventType.passwordRecovery,
-      supabase.AuthChangeEvent.tokenRefreshed =>
-        AuthChangeEventType.tokenRefreshed,
+      supabase.AuthChangeEvent.passwordRecovery => AuthChangeEventType.passwordRecovery,
+      supabase.AuthChangeEvent.tokenRefreshed => AuthChangeEventType.tokenRefreshed,
       supabase.AuthChangeEvent.userUpdated => AuthChangeEventType.userUpdated,
       // ignore: deprecated_member_use
       supabase.AuthChangeEvent.userDeleted => AuthChangeEventType.userDeleted,
-      supabase.AuthChangeEvent.mfaChallengeVerified =>
-        AuthChangeEventType.mfaChallengeVerified,
+      supabase.AuthChangeEvent.mfaChallengeVerified => AuthChangeEventType.mfaChallengeVerified,
     };
   }
 
@@ -99,10 +92,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     try {
-      final response = await _auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
+      final response = await _auth.signInWithPassword(email: email, password: password);
 
       if (response.user != null) {
         return (user: _mapSupabaseUser(response.user!), failure: null);
@@ -126,50 +116,29 @@ class AuthRepositoryImpl implements AuthRepository {
 
       const scopes = ['email', 'profile'];
 
-      developer.log(
-        'Attempting lightweight authentication...',
-        name: 'AuthRepository',
-      );
+      developer.log('Attempting lightweight authentication...', name: 'AuthRepository');
       var googleUser = await _googleSignIn.attemptLightweightAuthentication();
-      developer.log(
-        'Lightweight auth result: ${googleUser != null}',
-        name: 'AuthRepository',
-      );
+      developer.log('Lightweight auth result: ${googleUser != null}', name: 'AuthRepository');
 
       if (googleUser == null) {
-        developer.log(
-          'Starting full authentication...',
-          name: 'AuthRepository',
-        );
+        developer.log('Starting full authentication...', name: 'AuthRepository');
         googleUser = await _googleSignIn.authenticate();
         developer.log('Full auth completed', name: 'AuthRepository');
       }
 
       final idToken = googleUser.authentication.idToken;
-      developer.log(
-        'ID Token obtained: ${idToken != null}',
-        name: 'AuthRepository',
-      );
+      developer.log('ID Token obtained: ${idToken != null}', name: 'AuthRepository');
 
       if (idToken == null) {
         developer.log('ERROR: No ID token found', name: 'AuthRepository');
-        return (
-          user: null,
-          failure: const AuthFailure.serverError('No ID token found'),
-        );
+        return (user: null, failure: const AuthFailure.serverError('No ID token found'));
       }
 
-      developer.log(
-        'Getting authorization for scopes...',
-        name: 'AuthRepository',
-      );
+      developer.log('Getting authorization for scopes...', name: 'AuthRepository');
       final authorization =
           await googleUser.authorizationClient.authorizationForScopes(scopes) ??
           await googleUser.authorizationClient.authorizeScopes(scopes);
-      developer.log(
-        'Access token obtained: ${authorization.accessToken}',
-        name: 'AuthRepository',
-      );
+      developer.log('Access token obtained: ${authorization.accessToken}', name: 'AuthRepository');
 
       developer.log('Signing in with Supabase...', name: 'AuthRepository');
       final response = await _auth.signInWithIdToken(
@@ -177,45 +146,28 @@ class AuthRepositoryImpl implements AuthRepository {
         idToken: idToken,
         accessToken: authorization.accessToken,
       );
-      developer.log(
-        'Supabase sign-in completed: ${response.user != null}',
-        name: 'AuthRepository',
-      );
+      developer.log('Supabase sign-in completed: ${response.user != null}', name: 'AuthRepository');
 
       if (response.user != null) {
         return (user: _mapSupabaseUser(response.user!), failure: null);
       }
 
-      return (
-        user: null,
-        failure: const AuthFailure.unknown('Google sign in failed'),
-      );
+      return (user: null, failure: const AuthFailure.unknown('Google sign in failed'));
     } on GoogleSignInException catch (e) {
-      developer.log(
-        'GoogleSignInException: ${e.code} - ${e.description}',
-        name: 'AuthRepository',
-      );
+      developer.log('GoogleSignInException: ${e.code} - ${e.description}', name: 'AuthRepository');
       if (e.code == GoogleSignInExceptionCode.canceled) {
         return (user: null, failure: const AuthFailure.cancelledByUser());
       }
       return (
         user: null,
-        failure: AuthFailure.serverError(
-          e.description ?? 'Google sign in error',
-        ),
+        failure: AuthFailure.serverError(e.description ?? 'Google sign in error'),
       );
     } on supabase.AuthException catch (e) {
       developer.log('AuthException: ${e.message}', name: 'AuthRepository');
       return (user: null, failure: _mapAuthException(e));
     } catch (e, stackTrace) {
-      developer.log(
-        'Unknown error: $e',
-        name: 'AuthRepository',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      if (e.toString().contains('canceled') ||
-          e.toString().contains('cancelled')) {
+      developer.log('Unknown error: $e', name: 'AuthRepository', error: e, stackTrace: stackTrace);
+      if (e.toString().contains('canceled') || e.toString().contains('cancelled')) {
         return (user: null, failure: const AuthFailure.cancelledByUser());
       }
       return (user: null, failure: AuthFailure.unknown(e.toString()));
@@ -238,10 +190,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<AuthFailure?> sendPasswordResetEmail({required String email}) async {
     try {
-      await _auth.resetPasswordForEmail(
-        email,
-        redirectTo: DeepLinkConfig.redirectUrl,
-      );
+      await _auth.resetPasswordForEmail(email, redirectTo: DeepLinkConfig.redirectUrl);
       return null;
     } on supabase.AuthException catch (e) {
       return _mapAuthException(e);
@@ -291,20 +240,13 @@ class AuthRepositoryImpl implements AuthRepository {
         OtpType.email => supabase.OtpType.email,
       };
 
-      final response = await _auth.verifyOTP(
-        email: email,
-        token: token,
-        type: supabaseOtpType,
-      );
+      final response = await _auth.verifyOTP(email: email, token: token, type: supabaseOtpType);
 
       if (response.user != null) {
         return (user: _mapSupabaseUser(response.user!), failure: null);
       }
 
-      return (
-        user: null,
-        failure: const AuthFailure.unknown('OTP verification failed'),
-      );
+      return (user: null, failure: const AuthFailure.unknown('OTP verification failed'));
     } on supabase.AuthException catch (e) {
       return (user: null, failure: _mapAuthException(e));
     } catch (e) {
@@ -317,16 +259,12 @@ class AuthRepositoryImpl implements AuthRepository {
       id: user.id,
       email: user.email ?? '',
       displayName:
-          user.userMetadata?['full_name'] as String? ??
-          user.userMetadata?['name'] as String?,
+          user.userMetadata?['full_name'] as String? ?? user.userMetadata?['name'] as String?,
       avatarUrl:
-          user.userMetadata?['avatar_url'] as String? ??
-          user.userMetadata?['picture'] as String?,
+          user.userMetadata?['avatar_url'] as String? ?? user.userMetadata?['picture'] as String?,
       emailConfirmed: user.emailConfirmedAt != null,
       createdAt: DateTime.parse(user.createdAt),
-      lastSignInAt: user.lastSignInAt != null
-          ? DateTime.parse(user.lastSignInAt!)
-          : null,
+      lastSignInAt: user.lastSignInAt != null ? DateTime.parse(user.lastSignInAt!) : null,
     );
   }
 
@@ -378,19 +316,13 @@ class AuthRepositoryImpl implements AuthRepository {
         OtpType.email => supabase.OtpType.email,
       };
 
-      final response = await _auth.verifyOTP(
-        tokenHash: tokenHash,
-        type: supabaseOtpType,
-      );
+      final response = await _auth.verifyOTP(tokenHash: tokenHash, type: supabaseOtpType);
 
       if (response.user != null) {
         return (user: _mapSupabaseUser(response.user!), failure: null);
       }
 
-      return (
-        user: null,
-        failure: const AuthFailure.unknown('Token verification failed'),
-      );
+      return (user: null, failure: const AuthFailure.unknown('Token verification failed'));
     } on supabase.AuthException catch (e) {
       return (user: null, failure: _mapAuthException(e));
     } catch (e) {
@@ -410,10 +342,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return (user: _mapSupabaseUser(response.user!), failure: null);
       }
 
-      return (
-        user: null,
-        failure: const AuthFailure.unknown('Failed to set session from tokens'),
-      );
+      return (user: null, failure: const AuthFailure.unknown('Failed to set session from tokens'));
     } on supabase.AuthException catch (e) {
       return (user: null, failure: _mapAuthException(e));
     } catch (e) {

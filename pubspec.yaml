@@ -40,6 +40,18 @@ dev_dependencies:
   envied_generator: ^1.3.3
   freezed: ^3.2.5
   go_router_builder: ^4.2.0
+  icons_launcher: ^3.0.3
+
+icons_launcher:
+  platforms:
+    android:
+      enable: true
+      image_path: "assets/logo/ic_launcher.png"
+      notification_image: "assets/logo/ic_launcher_foreground.png"
+      adaptive_background_image: "assets/logo/ic_launcher_background.png"
+      adaptive_foreground_image: "assets/logo/ic_launcher_foreground.png"
+      adaptive_round_image: "assets/logo/ic_launcher.png"
+      adaptive_monochrome_image: "assets/logo/ic_launcher_monochrome.png"
 
 flutter:
   uses-material-design: true

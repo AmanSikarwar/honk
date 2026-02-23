@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -116,11 +115,9 @@ class _JoinStateView extends StatelessWidget {
               const SizedBox(height: AppSpacing.lg),
               Text(
                 title,
-                style: GoogleFonts.adventPro(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineMedium?.copyWith(color: Colors.white),
               ),
               const SizedBox(height: AppSpacing.sm),
               Padding(
@@ -128,8 +125,7 @@ class _JoinStateView extends StatelessWidget {
                 child: Text(
                   subtitle,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.adventPro(
-                    fontSize: 16,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Colors.white.withValues(alpha: 0.8),
                   ),
                 ),
@@ -170,7 +166,7 @@ class _JoinFailureView extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF4C1D95), Color(0xFF7C3AED)],
+              colors: [AppColors.gradientStart, AppColors.gradientMid],
             ),
           ),
         ),
@@ -184,18 +180,15 @@ class _JoinFailureView extends StatelessWidget {
                 const SizedBox(height: AppSpacing.lg),
                 Text(
                   'Couldn\'t join',
-                  style: GoogleFonts.adventPro(
-                    fontSize: 32,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.headlineMedium?.copyWith(color: Colors.white),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.adventPro(
-                    fontSize: 14,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.white.withValues(alpha: 0.75),
                   ),
                 ),

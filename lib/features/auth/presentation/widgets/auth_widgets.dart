@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../common/widgets/comic_ui.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 
-/// A full-page auth layout with a gradient header and white card body.
+/// A full-page auth layout with a comic-style header and lavender body.
 class AuthScaffold extends StatelessWidget {
   const AuthScaffold({
     super.key,
@@ -23,27 +23,64 @@ class AuthScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: SystemUiOverlayStyle.dark,
       child: PopScope(
         canPop: canPop,
         child: Scaffold(
-          body: Column(
-            children: [
-              // Gradient header
-              _AuthHeader(title: title, subtitle: subtitle, canPop: canPop),
-              // Scrollable body
-              Expanded(
-                child: SingleChildScrollView(
+          body: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.lg,
-                    AppSpacing.xl,
+                    AppSpacing.md,
                     AppSpacing.lg,
-                    AppSpacing.xl,
+                    0,
                   ),
-                  child: child,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          if (canPop)
+                            _BackBtn(
+                              onTap: () => Navigator.of(context).maybePop(),
+                            ),
+                          const Spacer(),
+                          const ComicBrandMark(fontSize: 32),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      ComicOutlinedText(
+                        title,
+                        style: const TextStyle(fontSize: 32),
+                        fillColor: AppColors.comicInk,
+                        strokeColor: Colors.white,
+                        strokeWidth: 4,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        subtitle,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: AppSpacing.lg),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.xl,
+                    ),
+                    child: child,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -51,70 +88,30 @@ class AuthScaffold extends StatelessWidget {
   }
 }
 
-class _AuthHeader extends StatelessWidget {
-  const _AuthHeader({
-    required this.title,
-    required this.subtitle,
-    required this.canPop,
-  });
-
-  final String title;
-  final String subtitle;
-  final bool canPop;
+class _BackBtn extends StatelessWidget {
+  const _BackBtn({required this.onTap});
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.gradientStart, AppColors.gradientMid],
+    return Material(
+      color: AppColors.comicPanelSoft,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            border: Border.all(color: AppColors.comicInk, width: 1.5),
+          ),
+          child: const Icon(
+            Icons.arrow_back,
+            color: AppColors.comicInk,
+            size: 20,
+          ),
         ),
-      ),
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + AppSpacing.md,
-        left: AppSpacing.lg,
-        right: AppSpacing.lg,
-        bottom: AppSpacing.xl,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (canPop)
-            IconButton(
-              onPressed: () => Navigator.of(context).maybePop(),
-              icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.white.withValues(alpha: 0.2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                minimumSize: const Size(36, 36),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            title,
-            style: GoogleFonts.adventPro(
-              fontSize: 32,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            subtitle,
-            style: GoogleFonts.adventPro(
-              fontSize: 15,
-              color: Colors.white.withValues(alpha: 0.8),
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -239,11 +236,9 @@ class GoogleSignInButton extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 'G',
-                style: GoogleFonts.adventPro(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.brandPurple,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(color: AppColors.brandPurple),
               ),
             ),
             const SizedBox(width: AppSpacing.sm),

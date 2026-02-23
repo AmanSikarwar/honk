@@ -38,11 +38,14 @@ abstract final class AppColors {
   static const countdownDanger = Color(0xFFEF4444);
 
   // Comic UI palette (new mock design)
-  static const comicLavender = Color(0xFFC59DDC);
-  static const comicPanel = Color(0xFFB45FD8);
-  static const comicPanelDark = Color(0xFFA84CCC);
-  static const comicPanelSoft = Color(0xFFD8B6EA);
+  static const comicLavender = Color(0xFFE0AEEB);
+  static const comicPanel = Color(0xFFBB61CF);
+  static const comicPanelDark = Color(0xFF8B3D9B);
+  static const comicPanelSoft = Color(0xFFF3D9F4);
   static const comicInk = Color(0xFF120212);
-  static const comicDanger = Color(0xFFFF5D65);
+  static const comicDanger = Color(0xFFFF5555);
   static const comicSuccess = Color(0xFFA954D5);
+
+  // Semantic tokens
+  static const snackBarDark = Color(0xFF3D1F6E);
 }

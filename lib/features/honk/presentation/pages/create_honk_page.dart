@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../common/widgets/user_avatar.dart';
+import '../../../../common/widgets/comic_ui.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -245,14 +245,7 @@ class _CreateHonkPageState extends State<CreateHonkPage> {
                 FilledButton(
                   onPressed: state.isSubmitting ? null : _submit,
                   child: state.isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
+                      ? const SmallSpinner()
                       : const Text('Create honk'),
                 ),
               ],

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
 
 class ComicOutlinedText extends StatelessWidget {
   const ComicOutlinedText(
@@ -142,7 +142,7 @@ class ComicCardContainer extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
     this.backgroundColor = AppColors.comicPanel,
-    this.radius = 24,
+    this.radius = AppRadius.comicCard,
     this.borderWidth = 2.5,
   });
 
@@ -211,6 +211,129 @@ class ComicBurstLogo extends StatelessWidget {
       width: width,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.high,
+    );
+  }
+}
+
+/// A small loading indicator for use in button loading states.
+class SmallSpinner extends StatelessWidget {
+  const SmallSpinner({super.key, this.color = Colors.white});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: CircularProgressIndicator(strokeWidth: 2.5, color: color),
+    );
+  }
+}
+
+/// A drag handle decoration for bottom sheets.
+class SheetDragHandle extends StatelessWidget {
+  const SheetDragHandle({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 40,
+        height: 4,
+        decoration: BoxDecoration(
+          color: AppColors.comicInk.withValues(alpha: 0.25),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
+}
+
+/// Gradient avatar used on profile screens.
+class GradientAvatar extends StatelessWidget {
+  const GradientAvatar({
+    super.key,
+    required this.username,
+    this.profileUrl,
+    this.size = 80,
+  });
+
+  final String username;
+  final String? profileUrl;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = username.isNotEmpty ? username[0].toUpperCase() : '?';
+    final url = profileUrl;
+
+    if (url != null) {
+      return ClipOval(
+        child: Image.network(
+          url,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => _fallback(initials),
+        ),
+      );
+    }
+    return _fallback(initials);
+  }
+
+  Widget _fallback(String initials) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.gradientStart, AppColors.gradientEnd],
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initials,
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: size * 0.36,
+        ),
+      ),
+    );
+  }
+}
+
+/// A section header with a left-side comic ink accent strip.
+class SectionHeader extends StatelessWidget {
+  const SectionHeader(this.title, {super.key});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 3,
+          height: 16,
+          margin: const EdgeInsets.only(right: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: AppColors.comicInk,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        Text(
+          title.toUpperCase(),
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: AppColors.comicInk,
+            letterSpacing: 0.8,
+          ),
+        ),
+      ],
     );
   }
 }

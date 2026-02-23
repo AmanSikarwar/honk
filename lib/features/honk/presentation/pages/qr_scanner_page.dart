@@ -16,7 +16,8 @@ class QrScannerPage extends StatefulWidget {
   State<QrScannerPage> createState() => _QrScannerPageState();
 }
 
-class _QrScannerPageState extends State<QrScannerPage> with WidgetsBindingObserver {
+class _QrScannerPageState extends State<QrScannerPage>
+    with WidgetsBindingObserver {
   late final MobileScannerController _controller;
   StreamSubscription<Object?>? _subscription;
   bool _didScan = false;
@@ -83,7 +84,9 @@ class _QrScannerPageState extends State<QrScannerPage> with WidgetsBindingObserv
         state.mapOrNull(
           success: (s) => HonkDetailsRoute(activityId: s.activityId).go(ctx),
           failure: (f) {
-            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(f.failure.toString())));
+            ScaffoldMessenger.of(
+              ctx,
+            ).showSnackBar(SnackBar(content: Text(f.failure.toString())));
             _didScan = false;
             unawaited(_controller.start());
           },
@@ -93,7 +96,10 @@ class _QrScannerPageState extends State<QrScannerPage> with WidgetsBindingObserv
         backgroundColor: Colors.black,
         body: BlocBuilder<JoinHonkCubit, JoinHonkState>(
           builder: (ctx, state) {
-            final isLoading = state.maybeMap(loading: (_) => true, orElse: () => false);
+            final isLoading = state.maybeMap(
+              loading: (_) => true,
+              orElse: () => false,
+            );
             return Stack(
               fit: StackFit.expand,
               children: [
@@ -150,7 +156,10 @@ class _StatusToast extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
       decoration: BoxDecoration(
         color: AppColors.brandPurple,
         borderRadius: BorderRadius.circular(AppRadius.chip),
@@ -161,12 +170,17 @@ class _StatusToast extends StatelessWidget {
           const SizedBox(
             width: 16,
             height: 16,
-            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2,
+            ),
           ),
           const SizedBox(width: AppSpacing.sm),
           Text(
             label,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(color: Colors.white),
           ),
         ],
       ),
@@ -187,7 +201,9 @@ class _ScanOverlay extends StatelessWidget {
         return Stack(
           children: [
             Positioned.fill(
-              child: CustomPaint(painter: _OverlayPainter(Rect.fromLTWH(left, top, side, side))),
+              child: CustomPaint(
+                painter: _OverlayPainter(Rect.fromLTWH(left, top, side, side)),
+              ),
             ),
             Positioned(
               left: left,
@@ -203,7 +219,9 @@ class _ScanOverlay extends StatelessWidget {
               child: Text(
                 'Point camera at a Honk QR code',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70, fontSize: 14),
+                style: Theme.of(
+                  ctx,
+                ).textTheme.bodySmall?.copyWith(color: Colors.white70),
               ),
             ),
           ],
@@ -245,7 +263,13 @@ class _CornerBrackets extends StatelessWidget {
         Positioned(
           top: 0,
           left: 0,
-          child: _Bracket(len: len, thick: thick, color: color, radius: r, corner: _Corner.topLeft),
+          child: _Bracket(
+            len: len,
+            thick: thick,
+            color: color,
+            radius: r,
+            corner: _Corner.topLeft,
+          ),
         ),
         Positioned(
           top: 0,

@@ -37,43 +37,41 @@ abstract final class AppTheme {
 
     return base.copyWith(
       textTheme: textTheme,
+      scaffoldBackgroundColor: AppColors.comicLavender,
       appBarTheme: AppBarTheme(
-        backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
-        foregroundColor: colorScheme.onSurface,
+        backgroundColor: Colors.transparent,
+        foregroundColor: AppColors.comicInk,
         elevation: 0,
-        scrolledUnderElevation: 1,
-        systemOverlayStyle: isDark
-            ? SystemUiOverlayStyle.light
-            : SystemUiOverlayStyle.dark,
+        scrolledUnderElevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
         titleTextStyle: GoogleFonts.adventPro(
           fontSize: 22,
           fontWeight: FontWeight.w600,
-          color: colorScheme.onSurface,
+          color: AppColors.comicInk,
         ),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.card),
+          borderRadius: BorderRadius.circular(AppRadius.comicCard),
+          side: const BorderSide(color: AppColors.comicInk, width: 2),
         ),
-        color: isDark ? AppColors.cardDark : colorScheme.surfaceContainerLow,
+        color: AppColors.comicPanel,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark
-            ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
-            : colorScheme.surfaceContainerLowest,
+        fillColor: Colors.white,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(color: colorScheme.outlineVariant),
+          borderSide: const BorderSide(color: AppColors.comicInk, width: 2),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(color: colorScheme.outlineVariant),
+          borderSide: const BorderSide(color: AppColors.comicInk, width: 2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(color: colorScheme.primary, width: 2),
+          borderSide: const BorderSide(color: AppColors.comicInk, width: 2.2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
@@ -82,7 +80,10 @@ abstract final class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
+          backgroundColor: AppColors.comicPanelDark,
+          foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(52),
+          side: const BorderSide(color: AppColors.comicInk, width: 2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
@@ -95,6 +96,7 @@ abstract final class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(52),
+          side: const BorderSide(color: AppColors.comicInk, width: 2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
@@ -113,17 +115,19 @@ abstract final class AppTheme {
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
+        backgroundColor: AppColors.comicPanelDark,
+        foregroundColor: Colors.white,
         extendedTextStyle: GoogleFonts.adventPro(
           fontSize: 16,
           fontWeight: FontWeight.w700,
         ),
-        shape: const StadiumBorder(),
+        shape: const StadiumBorder(
+          side: BorderSide(color: AppColors.comicInk, width: 2),
+        ),
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: isDark
-            ? const Color(0xFF3D1F6E)
+            ? AppColors.snackBarDark
             : colorScheme.inverseSurface,
         contentTextStyle: TextStyle(
           color: isDark ? Colors.white : colorScheme.onInverseSurface,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../common/widgets/comic_ui.dart';
 import '../../../../core/di/injection.dart';
@@ -165,7 +164,7 @@ class ActivityCard extends StatelessWidget {
                       activity.activity.toUpperCase(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.adventPro(
+                      style: const TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.w900,
                         height: 1,
@@ -202,16 +201,15 @@ class _EmptyFeedView extends StatelessWidget {
               const SizedBox(height: AppSpacing.md),
               ComicOutlinedText(
                 'NO HONKS YET',
-                style: GoogleFonts.adventPro(fontSize: 28),
+                style: const TextStyle(fontSize: 28),
                 strokeWidth: 4,
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Create one from the top-right menu.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.adventPro(
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppColors.comicInk.withValues(alpha: 0.8),
-                  fontSize: 14,
                 ),
               ),
             ],
@@ -315,7 +313,7 @@ class _JoinByCodeSheetState extends State<_JoinByCodeSheet> {
             children: [
               ComicOutlinedText(
                 'JOIN BY CODE',
-                style: GoogleFonts.adventPro(fontSize: 24),
+                style: const TextStyle(fontSize: 24),
                 strokeWidth: 4,
               ),
               const SizedBox(height: AppSpacing.md),
@@ -335,7 +333,7 @@ class _JoinByCodeSheetState extends State<_JoinByCodeSheet> {
                         controller: _ctrl,
                         enabled: !loading,
                         autofocus: true,
-                        style: GoogleFonts.adventPro(
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: AppColors.comicInk,
@@ -348,27 +346,6 @@ class _JoinByCodeSheetState extends State<_JoinByCodeSheet> {
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.md,
                             vertical: AppSpacing.md,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: AppColors.comicInk,
-                              width: 2,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: AppColors.comicInk,
-                              width: 2,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: AppColors.comicInk,
-                              width: 2.2,
-                            ),
                           ),
                         ),
                         onSubmitted: (_) => _join(ctx),
@@ -385,14 +362,7 @@ class _JoinByCodeSheetState extends State<_JoinByCodeSheet> {
                           ),
                         ),
                         icon: loading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
+                            ? const SmallSpinner()
                             : const Icon(Icons.login_rounded),
                         label: const Text('Join'),
                       ),

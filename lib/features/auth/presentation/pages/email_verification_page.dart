@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -106,10 +105,8 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                       Expanded(
                         child: Text(
                           widget.email,
-                          style: GoogleFonts.adventPro(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.brandPurple,
-                          ),
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(color: AppColors.brandPurple),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -127,7 +124,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                   enabled: !loading,
                   maxLength: 8,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.adventPro(
+                  style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 6,

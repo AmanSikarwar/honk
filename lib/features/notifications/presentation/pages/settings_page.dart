@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../common/widgets/user_avatar.dart';
+import '../../../../common/widgets/comic_ui.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../auth/domain/entities/app_user.dart';
@@ -39,9 +39,11 @@ class SettingsPage extends StatelessWidget {
                 _InfoRow(
                   icon: Icons.info_outline_rounded,
                   title: 'Version',
-                  trailing: const Text(
-                    '1.0.0',
-                    style: TextStyle(color: Colors.grey),
+                  trailing: Builder(
+                    builder: (context) => Text(
+                      '1.0.0',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ),
                 ),
                 const Divider(height: 1),
@@ -201,16 +203,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
+          const SheetDragHandle(),
           const SizedBox(height: AppSpacing.md),
           Text('Edit profile', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: AppSpacing.lg),
@@ -244,14 +237,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
             child: FilledButton(
               onPressed: _saving ? null : _save,
               child: _saving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
+                  ? const SmallSpinner()
                   : const Text('Save changes'),
             ),
           ),
@@ -291,7 +277,7 @@ class _NotificationsRow extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: AppColors.brandPurple.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
                 child: Icon(
                   Icons.notifications_active_outlined,
@@ -301,11 +287,7 @@ class _NotificationsRow extends StatelessWidget {
               title: const Text('Push notifications'),
               subtitle: const Text('Register device for alerts'),
               trailing: syncing
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                  ? const SmallSpinner(color: AppColors.comicInk)
                   : FilledButton.tonal(
                       onPressed: ctx.read<NotificationSyncCubit>().syncToken,
                       style: FilledButton.styleFrom(
@@ -320,7 +302,7 @@ class _NotificationsRow extends StatelessWidget {
             if (syncOk)
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  72,
+                  AppSpacing.xxl + AppSpacing.md,
                   0,
                   AppSpacing.md,
                   AppSpacing.sm,
@@ -346,7 +328,7 @@ class _NotificationsRow extends StatelessWidget {
             if (syncErr != null)
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  72,
+                  AppSpacing.xxl + AppSpacing.md,
                   0,
                   AppSpacing.md,
                   AppSpacing.sm,

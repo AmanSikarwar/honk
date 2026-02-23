@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:pretty_qr_code/pretty_qr_code.dart';
 
 import '../../../../common/widgets/comic_ui.dart';
@@ -349,7 +348,7 @@ class _ActivityInfoCard extends StatelessWidget {
                   activity.activity.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.adventPro(
+                  style: const TextStyle(
                     fontSize: 52,
                     fontWeight: FontWeight.w700,
                     height: 1,
@@ -380,7 +379,7 @@ class _ActivityInfoCard extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               color: AppColors.comicPanelSoft,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(color: AppColors.comicInk, width: 1.7),
             ),
             child: Row(
@@ -394,8 +393,7 @@ class _ActivityInfoCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     activity.inviteCode,
-                    style: GoogleFonts.adventPro(
-                      fontSize: 13,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: AppColors.comicInk,
                       fontWeight: FontWeight.w700,
                     ),
@@ -443,7 +441,7 @@ class _InfoRow extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppColors.comicPanelSoft,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.comicInk, width: 1.7),
       ),
       child: Row(
@@ -454,10 +452,9 @@ class _InfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.adventPro(
-                fontSize: 14,
-                color: AppColors.comicInk,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.comicInk),
             ),
           ),
         ],
@@ -488,7 +485,7 @@ class _PendingRequestsCard extends StatelessWidget {
             children: [
               ComicOutlinedText(
                 'PENDING ${pendingParticipants.length}',
-                style: GoogleFonts.adventPro(fontSize: 22),
+                style: const TextStyle(fontSize: 22),
                 strokeWidth: 4,
               ),
             ],
@@ -503,7 +500,7 @@ class _PendingRequestsCard extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 color: AppColors.comicPanelSoft,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(color: AppColors.comicInk, width: 1.7),
               ),
               child: Row(
@@ -512,7 +509,7 @@ class _PendingRequestsCard extends StatelessWidget {
                     child: Text(
                       (p.fullName ?? p.username).toUpperCase(),
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.adventPro(
+                      style: const TextStyle(
                         color: AppColors.comicInk,
                         fontWeight: FontWeight.w700,
                         fontSize: 18,
@@ -520,11 +517,7 @@ class _PendingRequestsCard extends StatelessWidget {
                     ),
                   ),
                   if (processing)
-                    const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                    const SmallSpinner(color: AppColors.comicInk)
                   else
                     Row(
                       children: [
@@ -565,7 +558,7 @@ class _ActionBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onPressed,
-      borderRadius: BorderRadius.circular(100),
+      borderRadius: BorderRadius.circular(AppRadius.chip),
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.sm + 2,
@@ -573,15 +566,12 @@ class _ActionBtn extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(100),
+          borderRadius: BorderRadius.circular(AppRadius.chip),
           border: Border.all(color: AppColors.comicInk, width: 1.8),
         ),
         child: ComicOutlinedText(
           label,
-          style: GoogleFonts.adventPro(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-          ),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
           strokeWidth: 2.7,
           fillColor: fillColor,
         ),
@@ -613,7 +603,7 @@ class _ParticipantsList extends StatelessWidget {
         children: [
           ComicOutlinedText(
             'MEMBERS (${participants.length})',
-            style: GoogleFonts.adventPro(fontSize: 24),
+            style: const TextStyle(fontSize: 24),
             strokeWidth: 4,
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -639,7 +629,7 @@ class _ParticipantsList extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 color: AppColors.comicPanelSoft,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(color: AppColors.comicInk, width: 1.7),
               ),
               child: Row(
@@ -648,7 +638,7 @@ class _ParticipantsList extends StatelessWidget {
                     child: Text(
                       (p.fullName ?? p.username).toUpperCase(),
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.adventPro(
+                      style: const TextStyle(
                         color: AppColors.comicInk,
                         fontWeight: FontWeight.w700,
                         fontSize: 17,
@@ -658,8 +648,7 @@ class _ParticipantsList extends StatelessWidget {
                   if (countdownText != null) ...[
                     Text(
                       countdownText,
-                      style: GoogleFonts.adventPro(
-                        fontSize: 12,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.comicInk.withValues(alpha: 0.7),
                       ),
                     ),
@@ -667,7 +656,7 @@ class _ParticipantsList extends StatelessWidget {
                   ],
                   ComicOutlinedText(
                     badgeText,
-                    style: GoogleFonts.adventPro(fontSize: 28),
+                    style: const TextStyle(fontSize: 28),
                     strokeWidth: 3.2,
                     fillColor: badgeColor,
                   ),
@@ -738,28 +727,8 @@ class _StatusFab extends StatelessWidget {
 
     return FloatingActionButton.extended(
       onPressed: isSaving ? null : () => _showStatusSheet(context),
-      backgroundColor: AppColors.comicPanelDark,
-      foregroundColor: Colors.white,
-      shape: StadiumBorder(
-        side: BorderSide(
-          color: AppColors.comicInk.withValues(alpha: 0.85),
-          width: 2,
-        ),
-      ),
-      icon: isSaving
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
-          : const ComicHornIcon(size: 25),
-      label: Text(
-        isSaving ? 'Updating...' : currentLabel.toUpperCase(),
-        style: GoogleFonts.adventPro(fontWeight: FontWeight.w700),
-      ),
+      icon: isSaving ? const SmallSpinner() : const ComicHornIcon(size: 25),
+      label: Text(isSaving ? 'Updating...' : currentLabel.toUpperCase()),
     );
   }
 
@@ -808,7 +777,7 @@ class _StatusPickerSheet extends StatelessWidget {
           children: [
             ComicOutlinedText(
               'SET YOUR STATUS',
-              style: GoogleFonts.adventPro(fontSize: 24),
+              style: const TextStyle(fontSize: 24),
               strokeWidth: 4,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -829,7 +798,7 @@ class _StatusPickerSheet extends StatelessWidget {
                         width: 2,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
                     onPressed: () {
@@ -844,7 +813,7 @@ class _StatusPickerSheet extends StatelessWidget {
                         Expanded(
                           child: ComicOutlinedText(
                             opt.label.toUpperCase(),
-                            style: GoogleFonts.adventPro(fontSize: 20),
+                            style: const TextStyle(fontSize: 20),
                             strokeWidth: 3,
                             fillColor: AppColors.comicInk,
                           ),
@@ -895,11 +864,7 @@ class _BottomActions extends StatelessWidget {
                   side: BorderSide(color: Theme.of(context).colorScheme.error),
                 ),
                 icon: state.isDeleting
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
+                    ? const SmallSpinner(color: AppColors.comicInk)
                     : const Icon(Icons.delete_outline),
                 label: const Text('Delete honk'),
               )
@@ -908,11 +873,7 @@ class _BottomActions extends StatelessWidget {
                     ? null
                     : () => confirmLeave(context, cubit),
                 icon: state.isLeaving
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
+                    ? const SmallSpinner(color: AppColors.comicInk)
                     : const Icon(Icons.exit_to_app),
                 label: const Text('Leave honk'),
               ),
@@ -1076,16 +1037,7 @@ class _EditHonkSheetState extends State<_EditHonkSheet> {
             AppSpacing.xl,
           ),
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
+            const SheetDragHandle(),
             const SizedBox(height: AppSpacing.md),
             Text('Edit Honk ✏️', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: AppSpacing.lg),
@@ -1237,7 +1189,7 @@ class _CopyRow extends StatelessWidget {
               Text(label, style: Theme.of(context).textTheme.labelSmall),
               Text(
                 value,
-                style: GoogleFonts.adventPro(fontSize: 13),
+                style: Theme.of(context).textTheme.bodySmall,
                 overflow: TextOverflow.ellipsis,
               ),
             ],
